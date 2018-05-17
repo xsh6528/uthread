@@ -1,6 +1,6 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.0)
 
-PROJECT(cpp C CXX ASM)
+PROJECT(uthread C CXX ASM)
 
 SET(CMAKE_BUILD_TYPE Release)
 SET(CMAKE_C_STANDARD 11)
@@ -18,27 +18,27 @@ INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/include)
 INCLUDE_DIRECTORIES(${GTEST_INCLUDE_DIRS})
 INCLUDE_DIRECTORIES(${GLOG_INCLUDE_DIRS})
 
-FILE(GLOB ASM   ${CMAKE_CURRENT_SOURCE_DIR}/src/*.s)
-FILE(GLOB C     ${CMAKE_CURRENT_SOURCE_DIR}/src/*.c)
-FILE(GLOB CPP   ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
-FILE(GLOB TESTS ${CMAKE_CURRENT_SOURCE_DIR}/tests/*.cpp)
-FILE(GLOB BENCH ${CMAKE_CURRENT_SOURCE_DIR}/bench/*.cpp)
+FILE(GLOB_RECURSE ASM   ${CMAKE_CURRENT_SOURCE_DIR}/src/*.s)
+FILE(GLOB_RECURSE C     ${CMAKE_CURRENT_SOURCE_DIR}/src/*.c)
+FILE(GLOB_RECURSE CPP   ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
+FILE(GLOB         TESTS ${CMAKE_CURRENT_SOURCE_DIR}/tests/*.cpp)
+FILE(GLOB         BENCH ${CMAKE_CURRENT_SOURCE_DIR}/bench/*.cpp)
 
-ADD_LIBRARY(cpp_lib ${ASM} ${C} ${CPP})
+ADD_LIBRARY(uthread_lib ${ASM} ${C} ${CPP})
 
-ADD_EXECUTABLE(cpp_tests ${TESTS})
+ADD_EXECUTABLE(uthread_tests ${TESTS})
 TARGET_LINK_LIBRARIES(
-    cpp_tests
-    cpp_lib
+    uthread_tests
+    uthread_lib
     ${CMAKE_THREAD_LIBS_INIT}
     ${GTEST_BOTH_LIBRARIES}
     ${GLOG_LIB}
 )
 
-ADD_EXECUTABLE(cpp_bench ${BENCH})
+ADD_EXECUTABLE(uthread_bench ${BENCH})
 TARGET_LINK_LIBRARIES(
-    cpp_bench
-    cpp_lib
+    uthread_bench
+    uthread_lib
     ${CMAKE_THREAD_LIBS_INIT}
     ${GTEST_BOTH_LIBRARIES}
     ${GLOG_LIB}
@@ -47,20 +47,14 @@ TARGET_LINK_LIBRARIES(
 
 ADD_CUSTOM_TARGET(
     run_tests
-    ${CMAKE_CURRENT_BINARY_DIR}/cpp_tests
-    DEPENDS cpp_tests
+    ${CMAKE_CURRENT_BINARY_DIR}/uthread_tests
+    DEPENDS uthread_tests
 )
 
 ADD_CUSTOM_TARGET(
     run_bench
-    ${CMAKE_CURRENT_BINARY_DIR}/cpp_bench
-    DEPENDS cpp_bench
-)
-
-ADD_CUSTOM_TARGET(
-    run_bin
-    ${CMAKE_CURRENT_BINARY_DIR}/cpp_bin
-    DEPENDS cpp_bin
+    ${CMAKE_CURRENT_BINARY_DIR}/uthread_bench
+    DEPENDS uthread_bench
 )
 
 ADD_CUSTOM_TARGET(
