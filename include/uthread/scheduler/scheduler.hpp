@@ -1,4 +1,4 @@
-#include <functional>
+#include <uthread/thread.hpp>
 
 #ifndef UTHREAD_SCHEDULER_SCHEDULER_HPP_
 #define UTHREAD_SCHEDULER_SCHEDULER_HPP_
@@ -8,11 +8,9 @@ namespace uthread {
 class Scheduler {
  public:
   /**
-   * Spawns and schedules a thread that runs function f.
-   *
-   * This will eventually return a thread handle for joining threads.
+   * Schedules a thread for execution.
    */
-  virtual void spawn(std::function<void()> f) = 0;
+  virtual void schedule(Thread thread) = 0;
 
   /**
    * Yields execution of the current thread to another.

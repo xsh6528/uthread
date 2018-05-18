@@ -11,33 +11,14 @@ namespace uthread {
 
 class RoundRobin : public Scheduler {
  public:
-  /**
-   * Creates a scheduler with a specified stack size for each thread.
-   */
-  explicit RoundRobin(size_t stack_size);
-
-  virtual void spawn(std::function<void()> f);
+  virtual void schedule(Thread thread);
 
   virtual void yield();
 
   virtual void run();
 
  private:
-  struct Thread {
-    std::function<void()> f;
-
-    std::unique_ptr<char[]> stack;
-
-    context::Context context;
-
-    context::Context *next;
-  };
-
-  static void thread_f(void *arg);
-
-  size_t stack_size;
-
-  std::queue<std::unique_ptr<Thread>> thread_queue;
+  std::queue<std::unique_ptr<Thread>> queue;
 
   std::unique_ptr<Thread> this_thread;
 };

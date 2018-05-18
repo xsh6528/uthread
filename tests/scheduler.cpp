@@ -6,33 +6,32 @@ namespace uthread {
 
 TEST(SchedulerTest, RunSingleThread) {
   int x = 0;
-  auto scheduler = std::make_unique<RoundRobin>(64 * 1024);
+  auto scheduler = std::make_unique<RoundRobin>();
 
-  scheduler->spawn([&]() {
+  Thread f([&]() {
     ASSERT_EQ(x, 0);
     x = 1;
   });
 
+  scheduler->schedule(std::move(f));
   scheduler->run();
 
   ASSERT_EQ(x, 1);
 }
 
-
 TEST(SchedulerTest, SwitchBetweenThreads) {
   int x = 0;
-  auto scheduler = std::make_unique<RoundRobin>(64 * 1024);
+  auto scheduler = std::make_unique<RoundRobin>();
 
-  auto f = [&]() {
+  Thread f([&]() {
     ASSERT_EQ(x, 0);
     scheduler->yield();
     ASSERT_EQ(x, 1);
     scheduler->yield();
     ASSERT_EQ(x, 2);
-    scheduler->yield();
-  };
+  });
 
-  auto g = [&]() {
+  Thread g([&]() {
     ASSERT_EQ(x, 0);
     x = 1;
     scheduler->yield();
@@ -40,10 +39,10 @@ TEST(SchedulerTest, SwitchBetweenThreads) {
     x = 2;
     scheduler->yield();
     ASSERT_EQ(x, 2);
-  };
+  });
 
-  scheduler->spawn(f);
-  scheduler->spawn(g);
+  scheduler->schedule(std::move(f));
+  scheduler->schedule(std::move(g));
   scheduler->run();
 
   ASSERT_EQ(x, 2);
@@ -51,20 +50,20 @@ TEST(SchedulerTest, SwitchBetweenThreads) {
 
 TEST(SchedulerTest, SwitchToNextOnFinish) {
   int x = 0;
-  auto scheduler = std::make_unique<RoundRobin>(64 * 1024);
+  auto scheduler = std::make_unique<RoundRobin>();
 
-  auto f = [&]() {
+  Thread f([&]() {
     ASSERT_EQ(x, 0);
     x = 1;
-  };
+  });
 
-  auto g = [&]() {
+  Thread g([&]() {
     ASSERT_EQ(x, 1);
     x = 2;
-  };
+  });
 
-  scheduler->spawn(f);
-  scheduler->spawn(g);
+  scheduler->schedule(std::move(f));
+  scheduler->schedule(std::move(g));
   scheduler->run();
 
   ASSERT_EQ(x, 2);

@@ -4,5 +4,6 @@
 #include <uthread/context.hpp>
 #include <uthread/scheduler/round_robin.hpp>
 #include <uthread/scheduler/scheduler.hpp>
+#include <uthread/thread.hpp>
 
 #endif  // UTHREAD_UTHREAD_HPP_
