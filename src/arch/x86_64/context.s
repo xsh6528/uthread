@@ -7,8 +7,8 @@
  * https://en.wikipedia.org/wiki/FLAGS_register
  */
 
-.globl snapshot
-snapshot:
+.globl context_get
+context_get:
   movq %rbx, 8  (%rdi)
   movq %rcx, 16 (%rdi)
   movq %rdx, 24 (%rdi)
@@ -41,8 +41,8 @@ snapshot:
 
   ret
 
-.globl run
-run:
+.globl context_set
+context_set:
   movq 0  (%rdi), %rax
   movq 8  (%rdi), %rbx
   movq 16 (%rdi), %rcx

@@ -9,12 +9,17 @@
 
 namespace uthread {
 
+/**
+ * A user thread/fiber with it's own stack frame and execution context.
+ */
 class Thread {
  public:
+  /**
+   * The current execution status of a thread.
+   */
   enum class Status {
     /**
-     * A thread that can be ran or switched into. In other words, it has not
-     * finished executing and is not currently executing.
+     * A thread that is ready to execute.
      */
     Waiting,
     /**
@@ -22,7 +27,7 @@ class Thread {
      */
     Running,
     /**
-     * A thread that has finished executing.
+     * A thread that is finished executing.
      */
     Finished,
   };
@@ -33,23 +38,32 @@ class Thread {
   static constexpr size_t DEFAULT_STACK_SIZE = 65536;
 
   /**
-   * Creates a thread that executes function f.
+   * Creates a thread that executes function f when ran.
    */
-  explicit Thread(std::function<void()> f,
-                  size_t stack_size = DEFAULT_STACK_SIZE);
+  static std::unique_ptr<Thread> create(std::function<void()> f,
+                                        size_t stack_size = DEFAULT_STACK_SIZE);
+
+  Thread(const Thread&) = delete;
+
+  Thread(Thread&&) = delete;
+
+  Thread& operator=(const Thread&) = delete;
+
+  Thread& operator=(Thread&&) = delete;
 
   /**
-   * Runs the thread.
+   * Runs the thread, returning when a thread in the execution chain finishes.
    *
-   * This function returns when the thread or another thread that was swapped
-   * into from this thread finishes executing.
+   * The execution chain refers to any threads that execute as a result of this
+   * thread. In other words, the thread may swap into other threads and
+   * whichever one finishes executing will trigger a return.
    */
   void run();
 
   /**
-   * Saves the current execution context to the thread and runs another.
+   * Saves the execution context into this thread and switches to another.
    */
-  void swap(Thread const *other);
+  void swap(Thread *other);
 
   /**
    * Returns the execution status of the thread.
@@ -57,21 +71,19 @@ class Thread {
   Status status() const;
 
  private:
-  struct TContext {
-    std::function<void()> f;
-
-    std::unique_ptr<char[]> stack;
-
-    context::Context context;
-
-    context::Context *next = nullptr;
-
-    Status status = Status::Waiting;
-  };
+  Thread() = default;
 
   static void thread_f(void *arg);
 
-  std::unique_ptr<TContext> context;
+  std::function<void()> f_;
+
+  std::unique_ptr<char[]> stack_;
+
+  Context context_;
+
+  Context const *next_ = nullptr;
+
+  Status status_ = Status::Waiting;
 };
 
 }

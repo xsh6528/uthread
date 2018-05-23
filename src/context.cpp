@@ -1,11 +1,11 @@
 #include <uthread/context.hpp>
 
-namespace uthread { namespace context {
+namespace uthread {
 
-void swap(Context *current, Context const *other) {
-  if (snapshot(current) == Snapshot::SNAPSHOT) {
-    run(other);
+void context_swap(Context *current, Context const *other) {
+  if (context_get(current) == Snapshot::SNAPSHOT) {
+    context_set(other);
   }
 }
 
-}}
+}

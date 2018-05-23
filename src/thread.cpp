@@ -4,49 +4,51 @@
 
 namespace uthread {
 
-Thread::Thread(std::function<void()> f, size_t stack_size) {
-  context = std::make_unique<TContext>();
-  context->f = std::move(f);
-  context->stack = std::make_unique<char[]>(stack_size);
-  context::with_f(&(context->context),
-                  context->stack.get(),
-                  stack_size,
-                  thread_f,
-                  context.get());
+std::unique_ptr<Thread> Thread::create(std::function<void()> f,
+                                       size_t stack_size) {
+  std::unique_ptr<Thread> thread(new Thread());
+  thread->f_ = std::move(f);
+  thread->stack_ = std::make_unique<char[]>(stack_size);
+  context_with_f(&(thread->context_),
+                 thread->stack_.get(),
+                 stack_size,
+                 thread_f,
+                 thread.get());
+  return thread;
 }
 
 void Thread::run() {
-  DCHECK(status() == Status::Waiting);
+  DCHECK(status_ == Status::Waiting);
 
-  context::Context current;
-  context->next = &current;
-  context->status = Status::Running;
-  context::swap(&current, &(context->context));
+  Context current;
+  next_ = &current;
+  status_ = Status::Running;
+  context_swap(&current, &context_);
 }
 
-void Thread::swap(Thread const *other) {
-  DCHECK_NOTNULL(context->next);
+void Thread::swap(Thread *other) {
   DCHECK_NOTNULL(other);
+  DCHECK_NOTNULL(next_);
   DCHECK_NE(this, other);
-  DCHECK(status() == Status::Running);
-  DCHECK(other->status() == Status::Waiting);
+  DCHECK(status_ == Status::Running);
+  DCHECK(other->status_ == Status::Waiting);
 
-  other->context->next = context->next;
-  context->status = Status::Waiting;
-  other->context->status = Status::Running;
-  context::swap(&(context->context), &(other->context->context));
+  status_ = Status::Waiting;
+  other->next_ = next_;
+  other->status_ = Status::Running;
+  context_swap(&context_, &(other->context_));
 }
 
 Thread::Status Thread::status() const {
-  return context->status;
+  return status_;
 }
 
 void Thread::thread_f(void *arg) {
-  TContext *context = reinterpret_cast<TContext *>(arg);
-  context->f();
-  context->status = Status::Finished;
-  context::swap(&(context->context), context->next);
-  CHECK(false);
+  Thread *thread = reinterpret_cast<Thread *>(arg);
+  thread->f_();
+  thread->status_ = Status::Finished;
+  context_swap(&(thread->context_), thread->next_);
+  CHECK(false) << "Unreachable!";
 }
 
 }

@@ -3,7 +3,7 @@
 #ifndef UTHREAD_ARCH_X86_64_CONTEXT_HPP_
 #define UTHREAD_ARCH_X86_64_CONTEXT_HPP_
 
-namespace uthread { namespace context {
+namespace uthread {
 
 struct Context {
   uint64_t rax;
@@ -25,6 +25,6 @@ struct Context {
   uint64_t r15;
 };
 
-}}
+}
 
 #endif  // UTHREAD_ARCH_X86_64_CONTEXT_HPP_

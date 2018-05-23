@@ -3,7 +3,7 @@
 #include <benchmark/benchmark.h>
 #include <glog/logging.h>
 
-#include <uthread/context.hpp>
+#include <uthread/uthread.hpp>
 
 namespace uthread { namespace context {
 
@@ -12,18 +12,17 @@ static Context context_g;
 static ucontext_t context_i;
 
 static void f() {
-  run(&context_g);
+  context_set(&context_g);
 }
 
 static void g() {
-  if (snapshot(&context_g) == Snapshot::SNAPSHOT) {
+  if (context_get(&context_g) == Snapshot::SNAPSHOT) {
     f();
   }
 }
 
 /**
- * Benchmarks a snapshot() + run() (a single context switch) using our own
- * context API.
+ * Benchmarks a context_get() + context_set(), a single context switch.
  */
 static void bench_uthread_switch(benchmark::State& state) {
   for (auto _ : state) {
@@ -45,8 +44,7 @@ static void i() {
 }
 
 /**
- * Benchmarks a getcontext() + setcontext() (a single context switch) using
- * Linux's buildin ucontext API.
+ * Benchmarks a getcontext() + setcontext(), a single context switch.
  */
 static void bench_sys_switch(benchmark::State& state) {
   for (auto _ : state) {

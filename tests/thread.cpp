@@ -7,14 +7,14 @@ namespace uthread {
 TEST(ThreadTest, RunSingleThread) {
   int x = 0;
 
-  Thread f([&]() {
+  auto f = Thread::create([&]() {
     ASSERT_EQ(x, 0);
     x = 1;
   });
 
-  f.run();
+  f->run();
 
-  ASSERT_EQ(f.status(), Thread::Status::Finished);
+  ASSERT_EQ(f->status(), Thread::Status::Finished);
   ASSERT_EQ(x, 1);
 }
 
@@ -23,7 +23,7 @@ TEST(ThreadTest, SwitchBetweenThreads) {
   std::unique_ptr<Thread> f;
   std::unique_ptr<Thread> g;
 
-  f = std::make_unique<Thread>([&]() {
+  f = Thread::create([&]() {
     ASSERT_EQ(f->status(), Thread::Status::Running);
     ASSERT_EQ(g->status(), Thread::Status::Waiting);
     ASSERT_EQ(x, 0);
@@ -37,7 +37,7 @@ TEST(ThreadTest, SwitchBetweenThreads) {
     ASSERT_EQ(x, 2);
   });
 
-  g = std::make_unique<Thread>([&]() {
+  g = Thread::create([&]() {
     ASSERT_EQ(f->status(), Thread::Status::Waiting);
     ASSERT_EQ(g->status(), Thread::Status::Running);
     ASSERT_EQ(x, 0);

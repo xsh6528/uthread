@@ -8,59 +8,60 @@
 #ifndef UTHREAD_CONTEXT_HPP_
 #define UTHREAD_CONTEXT_HPP_
 
-namespace uthread { namespace context {
+namespace uthread {
 
+/**
+ * A result which signifies the cause of a return from context_get(...).
+ */
 enum class Snapshot {
   /**
-   * The result of returning from snapshot(...) for the first time. In other
-   * words, after the snapshot was taken.
+   * The first time we return from context_get(...). In other words, after a
+   * snapshot of the context was taken.
    */
   SNAPSHOT = 0,
 
   /**
-   * The result of returning from snapshot(...) after a call to run(...).
+   * A return from context_get(...) due to a subsequent context_set(...).
    */
   SWITCH = 1,
 };
 
 /**
- * Sets up a context to execute f(arg) in the next run(...).
+ * Sets up a context to execute f(arg) via context_set(...).
  *
  * Behavior upon termination of f is undefined. You should switch to a
  * different context or terminate the program within f.
  */
-void with_f(Context *context,
-            void *stack,
-            size_t stack_size,
-            void (*f)(void *),
-            void *arg);
+void context_with_f(Context *context,
+                    void *stack,
+                    size_t stack_size,
+                    void (*f)(void *),
+                    void *arg);
 
 /**
  * Saves the current context and switches to another.
- *
- * The current context will resume execution after a run(current) call.
  */
-void swap(Context *current, Context const *other);
+void context_swap(Context *current, Context const *other);
 
 extern "C" {
 
 /**
- * Saves a snapshot of the current execution to this context.
+ * Saves a snapshot of the current execution context.
  *
- * This function returns 0 or more times. See Snapshot for more info.
+ * This function returns 1 or more times. See Snapshot for more info.
  */
-Snapshot snapshot(Context *current);
+Snapshot context_get(Context *current);
 
 /**
  * Switches to a context.
  *
- * You MUST initialize a context with a call with(...) or snapshot(...) before
- * using run(...)! Otherwise the behavior of run is undefined.
+ * You MUST initialize a context via context_with_f(...) or context_get(...)
+ * before using context_set(...)! Otherwise the behavior is undefined.
  */
-void run(Context const *context);
+void context_set(Context const *context);
 
 }
 
-}}
+}
 
 #endif  // UTHREAD_CONTEXT_HPP_
