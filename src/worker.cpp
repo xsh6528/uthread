@@ -33,6 +33,8 @@ void Worker::loop() {
     queue_.pop();
     this_thread_->run();
   }
+
+  this_thread_.reset();
 }
 
 }
