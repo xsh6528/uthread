@@ -18,6 +18,25 @@ class Thread {
   using Queue = std::queue<std::unique_ptr<Thread>>;
 
   /**
+   * A reference to some thread.
+   */
+  class Ref {
+   public:
+    /**
+     * Sleeps the current executing thread until this one finishes.
+     *
+     * This function returns immediately if the the thread being joined has
+     * finished executing.
+     */
+    void join();
+
+   private:
+    std::weak_ptr<Thread *> thread_;
+
+    friend Thread;
+  };
+
+  /**
    * The current execution status of a thread.
    */
   enum class Status {
@@ -50,7 +69,7 @@ class Thread {
   /**
    * Creates and schedules a thread that executes function f.
    */
-  static void spawn(std::function<void()> f);
+  static Ref spawn(std::function<void()> f);
 
   /**
    * Context switches to another thread.
@@ -97,6 +116,10 @@ class Thread {
   Context const *runner_ = nullptr;
 
   Queue *ready_queue_ = nullptr;
+
+  std::shared_ptr<Thread *> anchor_;
+
+  Queue joined_;
 };
 
 }

@@ -95,6 +95,62 @@ TEST(ThreadTest, DeathIfSleepingWithNoReadyThreads) {
   });
 }
 
+TEST(ThreadTest, JoinOnRunningThread) {
+  int x = 0;
+
+  Thread::run([&]() {
+    auto f = Thread::spawn([&]() {
+      ASSERT_EQ(x, 0);
+      x = 1;
+      for (int i = 0; i < 100; i++) {
+        Thread::yield();
+        ASSERT_EQ(x, 1);
+      }
+      x = 2;
+    });
+
+    auto g = Thread::spawn([&]() {
+      f.join();
+      ASSERT_EQ(x, 2);
+      x = 3;
+    });
+
+    f.join();
+    g.join();
+
+    ASSERT_EQ(x, 3);
+  });
+
+  ASSERT_EQ(x, 3);
+}
+
+TEST(ThreadTest, JoinOnFinishedThread) {
+  int x = 0;
+
+  Thread::run([&]() {
+    auto f = Thread::spawn([&]() {
+      ASSERT_EQ(x, 0);
+      x = 1;
+    });
+
+    Thread::yield();
+    ASSERT_EQ(x, 1);
+
+    auto g = Thread::spawn([&]() {
+      f.join();
+      ASSERT_EQ(x, 1);
+      x = 2;
+    });
+
+    f.join();
+    g.join();
+
+    ASSERT_EQ(x, 2);
+  });
+
+  ASSERT_EQ(x, 2);
+}
+
 TEST(ThreadTest, ThreadDestroyedOnFinish) {
   auto x = std::make_shared<int>();
 

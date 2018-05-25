@@ -11,13 +11,31 @@ static constexpr char kNoThreadError[] =
 
 static thread_local std::unique_ptr<Thread> this_thread;
 
-void Thread::spawn(std::function<void()> f) {
+void Thread::Ref::join() {
+  CHECK(this_thread) << kNoThreadError;
+
+  auto thread = thread_.lock();
+  if (!thread) {
+    return;
+  }
+
+  auto raw = *(thread.get());
+  sleep(&(raw->joined_));
+}
+
+Thread::Ref Thread::spawn(std::function<void()> f) {
   CHECK(this_thread) << kNoThreadError;
 
   auto thread = create(f);
+
+  Ref ref;
+  ref.thread_ = thread->anchor_;
+
   thread->runner_ = this_thread->runner_;
   thread->ready_queue_ = this_thread->ready_queue_;
   this_thread->ready_queue_->push(std::move(thread));
+
+  return ref;
 }
 
 void Thread::yield() {
@@ -78,6 +96,7 @@ std::unique_ptr<Thread> Thread::create(std::function<void()> f) {
                  kStackSize,
                  thread_f,
                  thread.get());
+  thread->anchor_ = std::make_shared<Thread *>(thread.get());
   return thread;
 }
 
@@ -100,8 +119,13 @@ void Thread::swap(Queue *queue, Status this_status) {
 void Thread::thread_f(void *_) {
   CHECK(this_thread);
   this_thread->f_();
-  auto runner = this_thread->runner_;
-  context_set(runner);
+
+  while (!this_thread->joined_.empty()) {
+    Thread::ready(std::move(this_thread->joined_.front()));
+    this_thread->joined_.pop();
+  }
+
+  context_set(this_thread->runner_);
   CHECK(false) << "Unreachable!";
 }
 
