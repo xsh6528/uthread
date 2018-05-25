@@ -32,4 +32,10 @@ Lock::~Lock() {
   mutex_->release();
 }
 
+void Lock::sleep(Thread::Queue *queue) {
+  mutex_->release();
+  Thread::sleep(queue);
+  mutex_->acquire();
+}
+
 }

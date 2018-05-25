@@ -58,6 +58,14 @@ class Lock {
 
   ~Lock();
 
+  /**
+   * Sleeps the current thread on a queue.
+   *
+   * The underlying mutex is released before sleeping and reacquired before
+   * returning.
+   */
+  void sleep(Thread::Queue *queue);
+
  private:
   Mutex *mutex_ = nullptr;
 };
