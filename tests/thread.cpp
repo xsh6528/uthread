@@ -7,64 +7,117 @@ namespace uthread {
 TEST(ThreadTest, RunSingleThread) {
   int x = 0;
 
-  auto f = Thread::create([&]() {
+  Thread::run([&]() {
     ASSERT_EQ(x, 0);
     x = 1;
   });
 
-  f->run();
-
-  ASSERT_EQ(f->status(), Thread::Status::Finished);
   ASSERT_EQ(x, 1);
 }
 
-TEST(ThreadTest, SwitchBetweenThreads) {
+TEST(ThreadTest, SpawnOneThread) {
   int x = 0;
-  std::unique_ptr<Thread> f;
-  std::unique_ptr<Thread> g;
 
-  f = Thread::create([&]() {
-    ASSERT_EQ(f->status(), Thread::Status::Running);
-    ASSERT_EQ(g->status(), Thread::Status::Waiting);
-    ASSERT_EQ(x, 0);
-    f->swap(g.get());
-    ASSERT_EQ(f->status(), Thread::Status::Running);
-    ASSERT_EQ(g->status(), Thread::Status::Waiting);
-    ASSERT_EQ(x, 1);
-    f->swap(g.get());
-    ASSERT_EQ(f->status(), Thread::Status::Running);
-    ASSERT_EQ(g->status(), Thread::Status::Waiting);
-    ASSERT_EQ(x, 2);
-  });
-
-  g = Thread::create([&]() {
-    ASSERT_EQ(f->status(), Thread::Status::Waiting);
-    ASSERT_EQ(g->status(), Thread::Status::Running);
+  Thread::run([&]() {
+    Thread::spawn([&]() {
+      ASSERT_EQ(x, 1);
+      x = 2;
+    });
     ASSERT_EQ(x, 0);
     x = 1;
-    g->swap(f.get());
-    ASSERT_EQ(f->status(), Thread::Status::Waiting);
-    ASSERT_EQ(g->status(), Thread::Status::Running);
-    ASSERT_EQ(x, 1);
-    x = 2;
-    g->swap(f.get());
-    ASSERT_EQ(f->status(), Thread::Status::Finished);
-    ASSERT_EQ(g->status(), Thread::Status::Running);
-    ASSERT_EQ(x, 2);
-    x = 3;
   });
 
-  f->run();
-
-  // g calls the last swap so f finishes but g doesn't
-  ASSERT_EQ(f->status(), Thread::Status::Finished);
-  ASSERT_EQ(g->status(), Thread::Status::Waiting);
   ASSERT_EQ(x, 2);
+}
 
-  g->run();
-  ASSERT_EQ(g->status(), Thread::Status::Finished);
+TEST(ThreadTest, SpawnTwoThreadsAndYield) {
+  int x = 0;
+
+  auto f = [&]() {
+    ASSERT_EQ(x, 0);
+    Thread::yield();
+    ASSERT_EQ(x, 1);
+    Thread::yield();
+    ASSERT_EQ(x, 2);
+  };
+
+  auto g = [&]() {
+    ASSERT_EQ(x, 0);
+    x = 1;
+    Thread::yield();
+    ASSERT_EQ(x, 1);
+    x = 2;
+    Thread::yield();
+    ASSERT_EQ(x, 2);
+  };
+
+  Thread::run([&]() {
+    Thread::spawn(std::move(f));
+    Thread::spawn(std::move(g));
+  });
+
+  ASSERT_EQ(x, 2);
+}
+
+TEST(ThreadTest, SleepThreadThenReady) {
+  int x = 0;
+
+  Thread::run([&]() {
+    Thread::Queue queue;
+
+    Thread::spawn([&]() {
+      ASSERT_EQ(x, 0);
+      x = 1;
+      Thread::sleep(&queue);
+
+      ASSERT_EQ(x, 2);
+      x = 3;
+    });
+
+    ASSERT_EQ(x, 0);
+    Thread::yield();
+
+    ASSERT_EQ(x, 1);
+    x = 2;
+    Thread::ready(std::move(queue.front()));
+    Thread::yield();
+
+    ASSERT_EQ(x, 3);
+  });
 
   ASSERT_EQ(x, 3);
+}
+
+TEST(ThreadTest, DeathIfSleepingWithNoReadyThreads) {
+  Thread::run([]() {
+    Thread::Queue queue;
+    ASSERT_DEATH(Thread::sleep(&queue), "deadlock");
+  });
+}
+
+TEST(ThreadTest, ThreadDestroyedOnFinish) {
+  auto x = std::make_shared<int>();
+
+  Thread::run([=]() mutable {
+    Thread::spawn([=]() mutable {
+      ASSERT_EQ(x.use_count(), 3);
+      ASSERT_EQ(*x, 1);
+      *x = 2;
+    });
+
+    Thread::spawn([=]() mutable {
+      ASSERT_EQ(x.use_count(), 2);
+      ASSERT_EQ(*x, 2);
+      *x = 3;
+    });
+
+    ASSERT_EQ(x.use_count(), 4);
+    ASSERT_EQ(*x, 0);
+    *x = 1;
+  });
+
+  ASSERT_EQ(x.use_count(), 1);
+  ASSERT_EQ(*x, 3);
 }
 
 }

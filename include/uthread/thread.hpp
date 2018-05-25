@@ -1,6 +1,7 @@
 #include <cstddef>
 #include <functional>
 #include <memory>
+#include <queue>
 
 #include <uthread/context.hpp>
 
@@ -10,10 +11,12 @@
 namespace uthread {
 
 /**
- * A user thread/fiber with it's own stack frame and execution context.
+ * A thread with it's own stack frame and execution context.
  */
 class Thread {
  public:
+  using Queue = std::queue<std::unique_ptr<Thread>>;
+
   /**
    * The current execution status of a thread.
    */
@@ -21,7 +24,11 @@ class Thread {
     /**
      * A thread that is ready to execute.
      */
-    Waiting,
+    Ready,
+    /**
+     * A thread that is blocked from execution.
+     */
+    Sleeping,
     /**
      * A thread that is currently executing.
      */
@@ -32,17 +39,6 @@ class Thread {
     Finished,
   };
 
-  /**
-   * 64kb default stack.
-   */
-  static constexpr size_t DEFAULT_STACK_SIZE = 65536;
-
-  /**
-   * Creates a thread that executes function f when ran.
-   */
-  static std::unique_ptr<Thread> create(std::function<void()> f,
-                                        size_t stack_size = DEFAULT_STACK_SIZE);
-
   Thread(const Thread&) = delete;
 
   Thread(Thread&&) = delete;
@@ -52,26 +48,41 @@ class Thread {
   Thread& operator=(Thread&&) = delete;
 
   /**
-   * Runs the thread, returning when a thread in the execution chain finishes.
+   * Creates and schedules a thread that executes function f.
+   */
+  static void spawn(std::function<void()> f);
+
+  /**
+   * Context switches to another thread.
    *
-   * The execution chain refers to any threads that execute as a result of this
-   * thread. In other words, the thread may swap into other threads and
-   * whichever one finishes executing will trigger a return.
+   * This function returns immediately if no other threads are ready.
    */
-  void run();
+  static void yield();
 
   /**
-   * Saves the execution context into this thread and switches to another.
+   * Sleeps the current thread and context switches to another thread.
+   *
+   * This function causes a fatal error if no other threads are ready. The
+   * current thread is pushed onto the queue and can be woken via ready(..).
    */
-  void swap(Thread *other);
+  static void sleep(Queue *queue);
 
   /**
-   * Returns the execution status of the thread.
+   * Pushes a thread onto the ready queue.
    */
-  Status status() const;
+  static void ready(std::unique_ptr<Thread> thread);
+
+  /**
+   * Spawns a main thread which executes function f.
+   */
+  static void run(std::function<void()> f);
 
  private:
   Thread() = default;
+
+  static std::unique_ptr<Thread> create(std::function<void()> f);
+
+  static void swap(Queue *queue, Status this_status);
 
   static void thread_f(void *arg);
 
@@ -79,11 +90,13 @@ class Thread {
 
   std::unique_ptr<char[]> stack_;
 
+  Status status_ = Status::Ready;
+
   Context context_;
 
-  Context const *next_ = nullptr;
+  Context const *runner_ = nullptr;
 
-  Status status_ = Status::Waiting;
+  Queue *ready_queue_ = nullptr;
 };
 
 }
