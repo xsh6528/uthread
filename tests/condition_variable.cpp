@@ -10,24 +10,36 @@ TEST(ConditionVariableTest, WakeOne) {
   ConditionVariable cv;
 
   Thread::run([&]() {
-    Thread::spawn([&]() {
-      Lock guard(&mutex);
-      ASSERT_EQ(x, 0);
-      x = 1;
-      cv.sleep(&guard);
-      ASSERT_EQ(x, 2);
-      x = 3;
-    });
+    for (int i = 0; i < 100; i++) {
+      Thread::spawn([&]() {
+        Lock guard(&mutex);
+        ASSERT_LT(x, 100);
+        x++;
+        cv.sleep(&guard);
+        x++;
+      });
+    }
 
-    Thread::spawn([&]() {
-      ASSERT_EQ(x, 1);
-      x = 2;
+    // Wait for all threads to sleep.
+    while (x != 100) {
+      Thread::yield();
+    }
+
+    // Let's make sure the threads stay asleep.
+    for (int i = 0; i < 100; i++) {
+      ASSERT_EQ(x, 100);
+      Thread::yield();
+    }
+
+    // Wake one at a time.
+    for (int i = 0; i < 100; i++) {
       cv.wake_one();
-      ASSERT_EQ(x, 2);
-    });
+      Thread::yield();
+      ASSERT_EQ(x, 101 + i);
+    }
   });
 
-  ASSERT_EQ(x, 3);
+  ASSERT_EQ(x, 200);
 }
 
 TEST(ConditionVariableTest, WakeAll) {
@@ -42,20 +54,29 @@ TEST(ConditionVariableTest, WakeAll) {
         ASSERT_LT(x, 100);
         x++;
         cv.sleep(&guard);
-        ASSERT_GT(x, 100);
         x++;
       });
     }
 
-    Thread::spawn([&]() {
+    // Wait for all threads to sleep.
+    while (x != 100) {
+      Thread::yield();
+    }
+
+    // Let's make sure the threads stay asleep.
+    for (int i = 0; i < 100; i++) {
       ASSERT_EQ(x, 100);
-      x = 101;
-      cv.wake_all();
-      ASSERT_EQ(x, 101);
-    });
+      Thread::yield();
+    }
+
+    // Wake threads as a group.
+    cv.wake_all();
+    while (x != 200) {
+      Thread::yield();
+    }
   });
 
-  ASSERT_EQ(x, 201);
+  ASSERT_EQ(x, 200);
 }
 
 }

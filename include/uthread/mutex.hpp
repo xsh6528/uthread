@@ -38,7 +38,7 @@ class Mutex {
 
   Thread::Queue queue_;
 
-  State state_;
+  State state_ = State::Free;
 };
 
 /**
