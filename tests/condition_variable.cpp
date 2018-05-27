@@ -8,36 +8,39 @@ TEST(ConditionVariableTest, WakeOne) {
   int x = 0;
   Mutex mutex;
   ConditionVariable cv;
+  Executor exe;
 
-  Thread::run([&]() {
-    for (int i = 0; i < 100; i++) {
-      Thread::spawn([&]() {
-        Lock guard(&mutex);
-        ASSERT_LT(x, 100);
-        x++;
-        cv.sleep(&guard);
-        x++;
-      });
-    }
+  for (int i = 0; i < 100; i++) {
+    exe.add([&]() {
+      Lock guard(&mutex);
+      ASSERT_LT(x, 100);
+      x++;
+      cv.sleep(&guard);
+      x++;
+    });
+  }
 
-    // Wait for all threads to sleep.
+  exe.add([&]() {
+    // Wait for all threads to sleep..
     while (x != 100) {
-      Thread::yield();
+      Executor::current()->yield();
     }
 
-    // Let's make sure the threads stay asleep.
+    // Now let's make sure the threads stay asleep...
     for (int i = 0; i < 100; i++) {
       ASSERT_EQ(x, 100);
-      Thread::yield();
+      Executor::current()->yield();
     }
 
-    // Wake one at a time.
+    // Wake one at a time...
     for (int i = 0; i < 100; i++) {
       cv.wake_one();
-      Thread::yield();
+      Executor::current()->yield();
       ASSERT_EQ(x, 101 + i);
     }
   });
+
+  exe.run();
 
   ASSERT_EQ(x, 200);
 }
@@ -46,35 +49,38 @@ TEST(ConditionVariableTest, WakeAll) {
   int x = 0;
   Mutex mutex;
   ConditionVariable cv;
+  Executor exe;
 
-  Thread::run([&]() {
-    for (int i = 0; i < 100; i++) {
-      Thread::spawn([&]() {
-        Lock guard(&mutex);
-        ASSERT_LT(x, 100);
-        x++;
-        cv.sleep(&guard);
-        x++;
-      });
-    }
+  for (int i = 0; i < 100; i++) {
+    exe.add([&]() {
+      Lock guard(&mutex);
+      ASSERT_LT(x, 100);
+      x++;
+      cv.sleep(&guard);
+      x++;
+    });
+  }
 
-    // Wait for all threads to sleep.
+  exe.add([&]() {
+    // Wait for all threads to sleep..
     while (x != 100) {
-      Thread::yield();
+      Executor::current()->yield();
     }
 
-    // Let's make sure the threads stay asleep.
+    // Now let's make sure the threads stay asleep...
     for (int i = 0; i < 100; i++) {
       ASSERT_EQ(x, 100);
-      Thread::yield();
+      Executor::current()->yield();
     }
 
-    // Wake threads as a group.
+    // Wake as a group...
     cv.wake_all();
     while (x != 200) {
-      Thread::yield();
+      Executor::current()->yield();
     }
   });
+
+  exe.run();
 
   ASSERT_EQ(x, 200);
 }

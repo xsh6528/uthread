@@ -7,11 +7,14 @@ namespace uthread {
 TEST(MutexTest, AcquireWithoutContension) {
   int x = 0;
   Mutex mutex;
+  Executor exe;
 
-  Thread::run([&]() {
+  exe.add([&]() {
     Lock guard(&mutex);
     x = 1;
   });
+
+  exe.run();
 
   ASSERT_EQ(x, 1);
 }
@@ -19,22 +22,24 @@ TEST(MutexTest, AcquireWithoutContension) {
 TEST(MutexTest, AcquireWithContension) {
   int x = 0;
   Mutex mutex;
+  Executor exe;
 
-  Thread::run([&]() {
-    for (int i = 0; i < 100; i++) {
-      Thread::spawn([&]() {
-        Lock guard(&mutex);
+  for (int i = 0; i < 100; i++) {
+    exe.add([&]() {
+      Lock guard(&mutex);
 
-        x++;
-        auto copy = x;
+      x++;
+      auto copy = x;
 
-        for (int j = 0; j < 100; j++) {
-          Thread::yield();
-          ASSERT_EQ(x, copy);
-        }
-      });
-    }
-  });
+      // Let's make sure the lock keeps other threads away...
+      for (int j = 0; j < 100; j++) {
+        Executor::current()->yield();
+        ASSERT_EQ(x, copy);
+      }
+    });
+  }
+
+  exe.run();
 
   ASSERT_EQ(x, 100);
 }

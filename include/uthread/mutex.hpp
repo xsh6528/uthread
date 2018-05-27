@@ -1,4 +1,4 @@
-#include <uthread/thread.hpp>
+#include <uthread/executor.hpp>
 
 #ifndef UTHREAD_MUTEX_HPP_
 #define UTHREAD_MUTEX_HPP_
@@ -36,7 +36,7 @@ class Mutex {
     Free,
   };
 
-  Thread::Queue queue_;
+  std::queue<Executor::Thread> queue_;
 
   State state_ = State::Free;
 };
@@ -59,12 +59,16 @@ class Lock {
   ~Lock();
 
   /**
-   * Sleeps the current thread on a queue.
+   * Sleeps the current executing user thread, releasing the lock in the meantime.
    *
-   * The underlying mutex is released before sleeping and reacquired before
-   * returning.
+   * See Executor::sleep(...) for more info.
    */
-  void sleep(Thread::Queue *queue);
+  template<typename F>
+  void sleep(F f) {
+    mutex_->release();
+    Executor::current()->sleep(f);
+    mutex_->acquire();
+  }
 
  private:
   Mutex *mutex_ = nullptr;

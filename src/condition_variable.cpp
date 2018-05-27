@@ -7,19 +7,21 @@ namespace uthread {
 void ConditionVariable::sleep(Lock *guard) {
   CHECK_NOTNULL(guard);
 
-  guard->sleep(&queue_);
+  guard->sleep([&](auto thread) {
+    queue_.push(std::move(thread));
+  });
 }
 
 void ConditionVariable::wake_one() {
   if (!queue_.empty()) {
-    Thread::ready(std::move(queue_.front()));
+    Executor::current()->add(std::move(queue_.front()));
     queue_.pop();
   }
 }
 
 void ConditionVariable::wake_all() {
   while (!queue_.empty()) {
-    Thread::ready(std::move(queue_.front()));
+    Executor::current()->add(std::move(queue_.front()));
     queue_.pop();
   }
 }

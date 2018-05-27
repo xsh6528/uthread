@@ -1,5 +1,5 @@
+#include <uthread/executor.hpp>
 #include <uthread/mutex.hpp>
-#include <uthread/thread.hpp>
 
 #ifndef UTHREAD_CONDITION_VARIABLE_HPP_
 #define UTHREAD_CONDITION_VARIABLE_HPP_
@@ -29,7 +29,7 @@ class ConditionVariable {
   void wake_all();
 
  private:
-  Thread::Queue queue_;
+  std::queue<Executor::Thread> queue_;
 };
 
 }
