@@ -13,6 +13,13 @@ FIND_PACKAGE(Threads REQUIRED)
 FIND_PACKAGE(GTest   REQUIRED)
 FIND_PACKAGE(GLog    REQUIRED)
 
+FIND_LIBRARY(LIBEVENT_CORE NAMES libevent_core.a)
+IF(NOT LIBEVENT_CORE)
+  MESSAGE(FATAL_ERROR "libevent not found!")
+ELSE()
+    MESSAGE(STATUS "libevent found!")
+ENDIF()
+
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/include)
 INCLUDE_DIRECTORIES(${GTEST_INCLUDE_DIRS})
 INCLUDE_DIRECTORIES(${GLOG_INCLUDE_DIRS})
@@ -29,6 +36,7 @@ ADD_EXECUTABLE(uthread_tests ${TESTS})
 TARGET_LINK_LIBRARIES(
     uthread_tests
     uthread_lib
+    ${LIBEVENT_CORE}
     ${CMAKE_THREAD_LIBS_INIT}
     ${GTEST_BOTH_LIBRARIES}
     ${GLOG_LIB}
@@ -38,6 +46,7 @@ ADD_EXECUTABLE(uthread_bench ${BENCH})
 TARGET_LINK_LIBRARIES(
     uthread_bench
     uthread_lib
+    ${LIBEVENT_CORE}
     ${CMAKE_THREAD_LIBS_INIT}
     ${GTEST_BOTH_LIBRARIES}
     ${GLOG_LIB}
@@ -45,13 +54,13 @@ TARGET_LINK_LIBRARIES(
 )
 
 ADD_CUSTOM_TARGET(
-    run_tests
+    tests
     ${CMAKE_CURRENT_BINARY_DIR}/uthread_tests
     DEPENDS uthread_tests
 )
 
 ADD_CUSTOM_TARGET(
-    run_bench
+    bench
     ${CMAKE_CURRENT_BINARY_DIR}/uthread_bench
     DEPENDS uthread_bench
 )

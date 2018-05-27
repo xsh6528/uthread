@@ -17,7 +17,7 @@ The basic steps for building the project look like this.
 ./cmake.sh
 cd build
 make -j8
-make run_tests
-make run_bench
-make run_bin
+make lint
+make tests
+make bench
 ```
