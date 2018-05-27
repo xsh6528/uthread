@@ -17,7 +17,7 @@ sockaddr_in addr(int port) {
   ::bzero((char *) &server_addr, sizeof(server_addr));  // NOLINT
   server_addr.sin_family = AF_INET;
   server_addr.sin_addr.s_addr = ::inet_addr("127.0.0.1");
-  server_addr.sin_port = ::htons(port);
+  server_addr.sin_port = htons(port);
   return server_addr;
 }
 

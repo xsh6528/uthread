@@ -21,7 +21,7 @@ Io::~Io() {
 void Io::sleep(int fd, Event event) {
   Executor::Thread thread;
 
-  short eventlib_event;  // NOLINT
+  short eventlib_event = 0;  // NOLINT
 
   switch (event) {
     case Event::Read:

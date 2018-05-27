@@ -2,7 +2,7 @@
 
 uthread is a lightweight fiber/user threading librar. Some of the current supported features include...
 
-- Cooperative scheduling with fast context switching (~ 70M context switches/second on an Ubuntu VM)
+- Cooperative scheduling with fast context switching (~15M thread context switches/second on a single core)
 - Synchronization primitives like mutexes, condition variables, etc. for use between user threads
 - Asynchronous IO notifications, courtesy of libevent
 
@@ -37,7 +37,7 @@ You can download these dependencies on a Linux system using the provided deps.sh
 The basic steps for building the project look like this.
 
 ```
-./cmake.sh
+./cmake.sh -DCMAKE_BUILD_TYPE=Release
 cd build
 make -j8
 make tests
