@@ -4,6 +4,7 @@
 #include <uthread/condition_variable.hpp>
 #include <uthread/context.hpp>
 #include <uthread/executor.hpp>
+#include <uthread/io.hpp>
 #include <uthread/mutex.hpp>
 
 #endif  // UTHREAD_UTHREAD_HPP_

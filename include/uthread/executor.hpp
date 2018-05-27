@@ -43,6 +43,31 @@ class Executor {
     static constexpr size_t kStackSize = 64 * 1024;
 
     /**
+     * Creates an empty, non-executable thread.
+     */
+    Thread() = default;
+
+    Thread(const Thread&) = delete;
+
+    Thread(Thread&&) = default;
+
+    Thread& operator=(const Thread&) = delete;
+
+    Thread& operator=(Thread&&) = default;
+
+
+    /**
+     * Returns a reference to the user thread.
+     */
+    Ref ref() const;
+
+    /**
+     * Checks if the thread is executable.
+     */
+    operator bool() const;
+
+   private:
+    /**
      * Creates a user thread that executes function f.
      */
     template<typename F>
@@ -56,30 +81,6 @@ class Executor {
       joined_ = std::make_shared<std::queue<Thread>>();
     }
 
-    /**
-     * Creates an empty, non-executable thread.
-     */
-    Thread() = default;
-
-    Thread(const Thread&) = delete;
-
-    Thread(Thread&&) = default;
-
-    Thread& operator=(const Thread&) = delete;
-
-    Thread& operator=(Thread&&) = default;
-
-    /**
-     * Returns a reference to the user thread.
-     */
-    Ref ref() const;
-
-    /**
-     * Checks if the thread is executable.
-     */
-    operator bool() const;
-
-   private:
     std::function<void()> f_;
 
     std::unique_ptr<char[]> stack_;
@@ -99,6 +100,7 @@ class Executor {
     Thread thread(std::move(f));
     auto ref = thread.ref();
     ready_.push(std::move(thread));
+    alive_++;
     return ref;
   }
 
@@ -124,6 +126,11 @@ class Executor {
    *
    * This function transfers ownership of the current executing user thread to
    * the function f. A fatal error occurs if no other user threads are ready.
+   *
+   * WARNING: You should NOT migrate threads between executors! This means that
+   * any threads you may have captured from a sleep call MUST be ready'd and
+   * finished on the the same executor. Threads CANNOT be destroyed without
+   * finishing. This is important for accurate tracking of alive threads.
    */
   template<typename F>
   void sleep(F f)  {
@@ -136,6 +143,13 @@ class Executor {
       context_set(&(this_thread_.context_));
     }
   }
+
+  /**
+   * Returns the number of active threads.
+   *
+   * This count includes the currently running, ready, and sleeping threads.
+   */
+  size_t alive();
 
   /**
    * Returns the current executor.
@@ -152,6 +166,8 @@ class Executor {
   std::queue<Thread> ready_;
 
   Context executor_;
+
+  size_t alive_ = 0;
 
   static thread_local Executor *this_executor_;
 };

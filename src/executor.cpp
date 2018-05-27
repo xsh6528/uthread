@@ -22,7 +22,7 @@ Executor::Thread::Ref Executor::Thread::ref() const {
 }
 
 Executor::Thread::operator bool() const {
-  return !!(f_);
+  return !!(stack_);
 }
 
 void Executor::ready(Executor::Thread thread) {
@@ -57,6 +57,10 @@ void Executor::yield() {
   });
 }
 
+size_t Executor::alive() {
+  return alive_;
+}
+
 Executor *Executor::current() {
   DCHECK_NOTNULL(this_executor_);
 
@@ -68,6 +72,7 @@ void Executor::thread_f(void *_) {
   DCHECK(this_executor_->this_thread_);
 
   this_executor_->this_thread_.f_();
+  this_executor_->alive_--;
   context_set(&(this_executor_->executor_));
 }
 
