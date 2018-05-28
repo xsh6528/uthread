@@ -1,7 +1,23 @@
 #!/bin/bash
 
-echo "Installing dependencies..."
-cd /tmp
+echo "Provisioning VM..."
+
+sudo apt-get update
+
+# Setup ZSH.
+sudo apt-get install git zsh -y
+git clone https://github.com/robbyrussell/oh-my-zsh.git /home/vagrant/.oh-my-zsh
+sudo chsh -s /bin/zsh vagrant
+
+# Setup core packages.
+sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
+    build-essential \
+    cmake           \
+    libffi-dev      \
+    libssl-dev      \
+    manpages-dev    \
+    tmux            \
+    tree            \
 
 # GTest
 GTEST=googletest-release-1.8.0
@@ -12,7 +28,7 @@ cd $GTEST/googletest/build
 cmake ..
 make -j8
 sudo cp -r ../include/gtest /usr/local/include
-sudo cp libgtest.a libgtest_main.a /usr/local/lib
+sudo cp lib*.a /usr/local/lib
 
 # GLog
 GLOG=glog-0.3.5

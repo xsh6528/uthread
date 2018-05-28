@@ -30,16 +30,21 @@ Once you have a high level understanding of the executor take a look at the [Mut
 - [benchmark](https://github.com/google/benchmark)
 - [libevent](http://libevent.org/)
 
-You can download these dependencies on a Linux system using the provided deps.sh script.
-
 ## Building
 
-The basic steps for building the project look like this.
+A [Vagrant](https://www.vagrantup.com/) VM is provided with a complete development environment. You should first bootup the VM from the [vagrant](vagrant) directory...
 
 ```
-./cmake.sh -DCMAKE_BUILD_TYPE=Release
-cd build
-make -j8
-make tests
+vagrant up && vagrant ssh
+```
+
+Once the VM you can perform a build...
+
+```
+cd /uthread                           && \
+./cmake.sh -DCMAKE_BUILD_TYPE=Release && \
+cd build                              && \
+make -j8                              && \
+make tests                            && \
 make bench
 ```
