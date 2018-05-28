@@ -67,27 +67,33 @@ class Executor {
     operator bool() const;
 
    private:
+    struct State {
+      std::function<void()> f;
+
+      std::unique_ptr<char[]> stack;
+
+      Context context;
+
+      std::shared_ptr<std::queue<Thread>> joined;
+    };
+
     /**
      * Creates a user thread that executes function f.
      */
     template<typename F>
-    explicit Thread(F f): f_(std::move(f)) {
-      stack_ = std::make_unique<char[]>(kStackSize);
-      context_with_f(&context_,
-                     stack_.get(),
+    explicit Thread(F f) {
+      state_ = std::make_unique<State>();
+      state_->f = std::move(f);
+      state_->stack = std::make_unique<char[]>(kStackSize);
+      context_with_f(&(state_->context),
+                     state_->stack.get(),
                      kStackSize,
                      thread_f,
                      nullptr);
-      joined_ = std::make_shared<std::queue<Thread>>();
+      state_->joined = std::make_shared<std::queue<Thread>>();
     }
 
-    std::function<void()> f_;
-
-    std::unique_ptr<char[]> stack_;
-
-    Context context_;
-
-    std::shared_ptr<std::queue<Thread>> joined_;
+    std::unique_ptr<State> state_;
 
     friend Executor;
   };
@@ -136,11 +142,11 @@ class Executor {
   void sleep(F f)  {
     CHECK(!ready_.empty()) << "No ready threads... deadlock!";
 
-    if (context_get(&(this_thread_.context_)) == Snapshot::SNAPSHOT) {
+    if (context_get(&(this_thread_.state_->context)) == Snapshot::SNAPSHOT) {
       f(std::move(this_thread_));
       this_thread_ = std::move(ready_.front());
       ready_.pop();
-      context_set(&(this_thread_.context_));
+      context_set(&(this_thread_.state_->context));
     }
   }
 

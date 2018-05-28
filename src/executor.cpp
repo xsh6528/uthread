@@ -17,12 +17,12 @@ void Executor::Thread::Ref::join() {
 
 Executor::Thread::Ref Executor::Thread::ref() const {
   Executor::Thread::Ref ref;
-  ref.joined_ = joined_;
+  ref.joined_ = state_->joined;
   return ref;
 }
 
 Executor::Thread::operator bool() const {
-  return !!(stack_);
+  return !!(state_);
 }
 
 void Executor::ready(Executor::Thread thread) {
@@ -38,7 +38,7 @@ void Executor::run() {
   while (!ready_.empty()) {
     this_thread_ = std::move(ready_.front());
     ready_.pop();
-    context_swap(&executor_, &(this_thread_.context_));
+    context_swap(&executor_, &(this_thread_.state_->context));
   }
 
   this_thread_ = Thread();
@@ -71,7 +71,7 @@ void Executor::thread_f(void *_) {
   DCHECK_NOTNULL(this_executor_);
   DCHECK(this_executor_->this_thread_);
 
-  this_executor_->this_thread_.f_();
+  this_executor_->this_thread_.state_->f();
   this_executor_->alive_--;
   context_set(&(this_executor_->executor_));
 }
