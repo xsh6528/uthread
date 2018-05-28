@@ -14,9 +14,11 @@ void context_with_f(Context *context,
   CHECK_GT(stack_size, 0);
   CHECK_NOTNULL(f);
 
-  // Let's make sure stack is 16-byte aligned.
+  // https://software.intel.com/sites/default/files/article/402129/mpx-linux64-abi.pdf
+  // "... the value (%rsp + 8) is always a multiple of 16 (32 or 64) when
+  // control is transferred to the function entry point ..."
   uint64_t stack_addr = reinterpret_cast<uint64_t>(stack) + stack_size - 1;
-  uint64_t shift_addr = stack_addr % 16;
+  uint64_t shift_addr = stack_addr % 8;
   stack_addr -= shift_addr;
 
   CHECK_LT(shift_addr, stack_size);
