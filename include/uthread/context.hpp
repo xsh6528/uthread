@@ -1,7 +1,6 @@
 #include <cstddef>
 
-#include <uthread/arch/arch.hpp>
-#ifdef UTHREAD_X86_64
+#ifdef __x86_64__
 #include <uthread/arch/x86_64/context.hpp>
 #endif
 
@@ -50,7 +49,7 @@ extern "C" {
  *
  * This function returns 1 or more times. See Snapshot for more info.
  */
-Snapshot context_get(Context *current);
+Snapshot context_get(Context *current) asm("context_get");
 
 /**
  * Switches to a context.
@@ -58,7 +57,7 @@ Snapshot context_get(Context *current);
  * You MUST initialize a context via context_with_f(...) or context_get(...)
  * before using context_set(...)! Otherwise the behavior is undefined.
  */
-void context_set(Context const *context);
+void context_set(Context const *context) asm("context_set");;
 
 }
 

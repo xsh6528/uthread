@@ -1,5 +1,3 @@
-#include <ucontext.h>
-
 #include <benchmark/benchmark.h>
 #include <glog/logging.h>
 
@@ -8,8 +6,6 @@
 namespace uthread { namespace context {
 
 static Context context_g;
-
-static ucontext_t context_i;
 
 static void f() {
   context_set(&context_g);
@@ -29,6 +25,14 @@ static void bench_uthread_switch(benchmark::State& state) {
     g();
   }
 }
+
+BENCHMARK(bench_uthread_switch);
+
+#ifdef __linux__
+
+#include <ucontext.h>
+
+static ucontext_t context_i;
 
 static void h() {
   CHECK_EQ(setcontext(&context_i), 0);
@@ -52,7 +56,8 @@ static void bench_sys_switch(benchmark::State& state) {
   }
 }
 
-BENCHMARK(bench_uthread_switch);
 BENCHMARK(bench_sys_switch);
+
+#endif
 
 }}
