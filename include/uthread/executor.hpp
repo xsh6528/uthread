@@ -151,9 +151,7 @@ class Executor {
   }
 
   /**
-   * Returns the number of active threads.
-   *
-   * This count includes the currently running, ready, and sleeping threads.
+   * Returns the number of threads running, ready, or sleeping.
    */
   size_t alive();
 

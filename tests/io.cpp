@@ -10,7 +10,12 @@
 
 namespace uthread {
 
-static constexpr int UDP_MESSAGE_SIZE = 1024;
+#define ASSERT_TAKES_APPROX_MS(EXPR, MS)              \
+auto start = std::chrono::steady_clock::now();        \
+EXPR;                                                 \
+auto took = std::chrono::steady_clock::now() - start; \
+ASSERT_GE(took, std::chrono::milliseconds(MS));       \
+ASSERT_LE(took, std::chrono::milliseconds(MS) * 1.1);
 
 sockaddr_in addr(int port) {
   sockaddr_in server_addr;
@@ -53,6 +58,8 @@ TEST(IoTest, IoShutsDownIfNoReadyThreads) {
 }
 
 TEST(IoTest, UdpEcho) {
+  static constexpr int kUdpMessageSize = 1024;
+
   std::random_device r;
   std::default_random_engine e(r());
   std::uniform_int_distribution<int> d(1024, 65535);
@@ -68,15 +75,15 @@ TEST(IoTest, UdpEcho) {
   exe.add([&]() {
     int fd = server(SOCK_DGRAM, port);
 
-    io.sleep(fd, Io::Event::Read);
+    io.sleep_on_fd(fd, Io::Event::Read);
 
     sockaddr_in src_addr;
     socklen_t src_addr_len = sizeof(src_addr);
-    char recv_buf[UDP_MESSAGE_SIZE + 1];
+    char recv_buf[kUdpMessageSize + 1];
     auto recv_len = ::recvfrom(fd, recv_buf, sizeof(recv_buf), 0,
       (sockaddr *) &src_addr, &src_addr_len);  // NOLINT
 
-    io.sleep(fd, Io::Event::Write);
+    io.sleep_on_fd(fd, Io::Event::Write);
 
     auto send_len = ::sendto(fd, recv_buf, recv_len, 0,
       (sockaddr *) &src_addr, src_addr_len);  // NOLINT
@@ -90,19 +97,19 @@ TEST(IoTest, UdpEcho) {
   exe.add([&]() {
     int fd = socket(SOCK_DGRAM);
     auto server_addr = addr(port);
-    char send_buf[UDP_MESSAGE_SIZE];
+    char send_buf[kUdpMessageSize];
     for (size_t i = 0; i < sizeof(send_buf); i++) {
       send_buf[i] = d(e);
     }
 
-    io.sleep(fd, Io::Event::Write);
+    io.sleep_on_fd(fd, Io::Event::Write);
 
     auto send_len = ::sendto(fd, send_buf, sizeof(send_buf), 0,
       (sockaddr *) &server_addr, sizeof(server_addr));  // NOLINT
 
     ASSERT_EQ(send_len, sizeof(send_buf));
 
-    io.sleep(fd, Io::Event::Read);
+    io.sleep_on_fd(fd, Io::Event::Read);
 
     sockaddr_in src_addr;
     socklen_t src_addr_len = sizeof(src_addr);
@@ -120,5 +127,19 @@ TEST(IoTest, UdpEcho) {
 
   exe.run();
 }
+
+TEST(IoTest, SleepsForApproximateTime) {
+  Executor exe;
+
+  Io io;
+  io.add(&exe);
+
+  exe.add([&]() {
+    ASSERT_TAKES_APPROX_MS(io.sleep_for(std::chrono::milliseconds(100)), 100);
+  });
+
+  ASSERT_TAKES_APPROX_MS(exe.run(), 100);
+}
+
 
 }

@@ -1,5 +1,4 @@
 #include <benchmark/benchmark.h>
-#include <glog/logging.h>
 
 #include <uthread/uthread.hpp>
 

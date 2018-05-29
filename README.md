@@ -4,7 +4,7 @@ uthread is a lightweight fiber/user threading librar. Some of the current suppor
 
 - Cooperative scheduling with fast context switching (~30M thread context switches/second on a single core)
 - Synchronization primitives like mutexes, condition variables, etc. for use between user threads
-- Asynchronous IO notifications, courtesy of libevent
+- Asynchronous IO notifications for timers, sockets, etc. courtesy of libevent
 
 Some missing features which may come in the future...
 
