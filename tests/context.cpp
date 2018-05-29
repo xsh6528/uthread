@@ -37,7 +37,7 @@ static void h(void *arg) {
 }
 
 TEST(ContextTest, SwapToSnapshot) {
-  int x = 0;
+  volatile int x = 0;
 
   if (context_get(&context_main) == Snapshot::SNAPSHOT) {
     ASSERT_EQ(x, 0);
