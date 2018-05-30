@@ -4,18 +4,10 @@
 #include <random>
 #include <sys/socket.h>
 
-#include <gtest/gtest.h>
-
+#include <uthread/gtest.hpp>
 #include <uthread/uthread.hpp>
 
 namespace uthread {
-
-#define ASSERT_TAKES_APPROX_MS(EXPR, MS)              \
-auto start = std::chrono::steady_clock::now();        \
-EXPR;                                                 \
-auto took = std::chrono::steady_clock::now() - start; \
-ASSERT_GE(took, std::chrono::milliseconds(MS));       \
-ASSERT_LE(took, std::chrono::milliseconds(MS) * 1.1);
 
 sockaddr_in addr(int port) {
   sockaddr_in server_addr;

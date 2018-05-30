@@ -18,7 +18,7 @@ void Mutex::release() {
   CHECK(state_ == State::Locked);
 
   if (!queue_.empty()) {
-    Executor::current()->add(std::move(queue_.front()));
+    Executor::current()->ready(std::move(queue_.front()));
     queue_.pop();
   } else {
     state_ = State::Free;
