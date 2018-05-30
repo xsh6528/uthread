@@ -175,4 +175,14 @@ TEST(ExecutorTest, ThreadDestroyedOnFinish) {
   ASSERT_EQ(*x, 3);
 }
 
+TEST(ExecutorTest, DeathFromExceptionCleansUpOtherThreads) {
+  Executor exe;
+
+  exe.add([=]() {
+    throw std::runtime_error("This is an exception!");
+  });
+
+  ASSERT_DEATH(exe.run(), "An exception has occurred: This is an exception!");
+}
+
 }

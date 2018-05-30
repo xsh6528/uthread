@@ -71,7 +71,13 @@ void Executor::thread_f(void *_) {
   DCHECK_NOTNULL(this_executor_);
   DCHECK(this_executor_->this_thread_);
 
-  this_executor_->this_thread_.state_->f();
+  try {
+    this_executor_->this_thread_.state_->f();
+  } catch (std::exception &ex) {
+    LOG(ERROR) << "An exception has occurred: " << ex.what();
+    std::terminate();
+  }
+
   this_executor_->alive_--;
   context_set(&(this_executor_->executor_));
 }
