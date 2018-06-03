@@ -21,14 +21,9 @@ Once you have a high level understanding of the executor take a look at the [Mut
 - [tests/executor.cpp](tests/executor.cpp) for examples of spawning, executing, and switching between user threads
 - [tests/mutex.cpp](tests/mutex.cpp) and [tests/condition_variable.cpp](tests/condition_variable.cpp) for examples of using the provided synchronization primitives
 - [tests/io.cpp](tests/io.cpp) for an example of IO notifications
+- [examples/echo.cpp](examples/echo.cpp) for an example of a TCP echo server
 
-## Dependencies
-
-- [CMake](https://cmake.org/)
-- [glog](https://github.com/google/glog)
-- [googletest](https://github.com/google/googletest)
-- [benchmark](https://github.com/google/benchmark)
-- [libevent](http://libevent.org/)
+You can run example `<X>` via `GLOG_logtostderr=1 ./<X>` after building.
 
 ## Building
 
@@ -48,6 +43,15 @@ make -j8                              && \
 make tests                            && \
 make bench
 ```
+
+
+## Dependencies
+
+- [gflags](https://github.com/gflags/gflags)
+- [glog](https://github.com/google/glog)
+- [googletest](https://github.com/google/googletest)
+- [benchmark](https://github.com/google/benchmark)
+- [libevent](http://libevent.org/)
 
 ## Reading
 

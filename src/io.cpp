@@ -4,7 +4,7 @@
 
 namespace uthread {
 
-static void event_cb(evutil_socket_t, short, void *arg) {  // NOLINT
+static void event_cb(evutil_socket_t, short, void *arg) {
   Executor::Thread *thread = reinterpret_cast<Executor::Thread *>(arg);
   Executor::current()->ready(std::move(*thread));
 }
@@ -27,7 +27,7 @@ Io::~Io() {
 }
 
 void Io::sleep_on_fd(int fd, Event event) {
-  short eventlib_event = 0;  // NOLINT
+  short eventlib_event = 0;
 
   switch (event) {
     case Event::Read:
@@ -64,7 +64,7 @@ void Io::add(Executor *executor) {
   });
 }
 
-void Io::sleep(int fd, short eventlib_event, const timeval *timeout) {  // NOLINT
+void Io::sleep(int fd, short eventlib_event, const timeval *timeout) {
   Executor::Thread thread;
 
   char buf[128];

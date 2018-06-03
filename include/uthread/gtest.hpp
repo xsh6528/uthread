@@ -1,3 +1,5 @@
+#include <chrono>
+
 #include <gtest/gtest.h>
 
 #ifndef UTHREAD_GTEST_HPP_
