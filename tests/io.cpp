@@ -31,8 +31,9 @@ TEST(IoTest, UdpEcho) {
 
   // UDP echo server, waits for one packet, responds, and shuts down.
   exe.add([&]() {
-    int fd;
-    ASSERT_NE(fd = nix::socket(SOCK_DGRAM), -1);
+    int fd = nix::socket(SOCK_DGRAM);
+    ASSERT_NE(fd, -1);
+    ASSERT_NE(nix::set_non_blocking(fd), -1);
     ASSERT_NE(::bind(fd, (sockaddr *) &server_addr, sizeof(server_addr)), -1);
 
     io.sleep_on_fd(fd, Io::Event::Read);
@@ -57,8 +58,9 @@ TEST(IoTest, UdpEcho) {
 
   // Client that tests the echo server.
   exe.add([&]() {
-    int fd;
-    ASSERT_NE(fd = nix::socket(SOCK_DGRAM), -1);
+    int fd = nix::socket(SOCK_DGRAM);
+    ASSERT_NE(fd, -1);
+    ASSERT_NE(nix::set_non_blocking(fd), -1);
 
     char send_buf[kUdpMessageSize];
     for (size_t i = 0; i < sizeof(send_buf); i++) {

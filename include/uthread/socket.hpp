@@ -14,6 +14,11 @@ namespace uthread { namespace nix {
 int socket(int type);
 
 /**
+ * Makes a socket non-blocking.
+ */
+int set_non_blocking(int fd);
+
+/**
  * Creates a socket address from an IPv4 address and port.
  */
 sockaddr_in socket_addr(const std::string &addr, int port);

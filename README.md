@@ -22,6 +22,7 @@ Once you have a high level understanding of the executor take a look at the [Mut
 - [tests/mutex.cpp](tests/mutex.cpp) and [tests/condition_variable.cpp](tests/condition_variable.cpp) for examples of using the provided synchronization primitives
 - [tests/io.cpp](tests/io.cpp) for an example of IO notifications
 - [examples/echo.cpp](examples/echo.cpp) for an example of a TCP echo server
+- [examples/nc.cpp](examples/nc.cpp) for a bare-bones nc clone
 
 You can run example `<X>` via `GLOG_logtostderr=1 ./<X>` after building.
 

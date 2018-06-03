@@ -20,6 +20,10 @@ int socket(int type) {
     return -1;
   }
 
+  return fd;
+}
+
+int set_non_blocking(int fd) {
   int flags = ::fcntl(fd, F_GETFL);
   if (flags == -1) {
     ::close(fd);
@@ -31,7 +35,7 @@ int socket(int type) {
     return -1;
   }
 
-  return fd;
+  return 0;
 }
 
 sockaddr_in socket_addr(const std::string &addr, int port) {

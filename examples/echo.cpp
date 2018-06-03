@@ -74,6 +74,8 @@ static void listener() {
     ::exit(1);
   }
 
+  CHECK_NE(::uthread::nix::set_non_blocking(fd), -1);
+
   auto server_addr = uthread::nix::socket_addr("127.0.0.1", FLAGS_port);
 
   if (::bind(fd, (sockaddr *) &server_addr, sizeof(server_addr)) == -1) {
