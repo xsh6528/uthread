@@ -4,7 +4,7 @@
 
 namespace uthread {
 
-static void sleep_user_threads_args(benchmark::internal::Benchmark* bench) {
+static void bench_sleep_args(benchmark::internal::Benchmark* bench) {
   for (int threads = 1; threads <= 32768; threads *= 8) {
     for (int sleeps = 1; sleeps <= 512; sleeps *= 8) {
       bench->Args({threads, sleeps});
@@ -18,7 +18,7 @@ static void sleep_user_threads_args(benchmark::internal::Benchmark* bench) {
  * take M ms, but of course there is scheduling and context switching overhead
  * with more threads and sleep calls. That's what we are measuring here.
  */
-static void sleep_user_threads(benchmark::State& state) {
+static void bench_sleep(benchmark::State& state) {
   for (auto _ : state) {
     state.PauseTiming();
     Executor exe;
@@ -39,9 +39,8 @@ static void sleep_user_threads(benchmark::State& state) {
   }
 }
 
-BENCHMARK(sleep_user_threads)
-  ->Apply(sleep_user_threads_args)
-  ->UseRealTime()
+BENCHMARK(bench_sleep)
+  ->Apply(bench_sleep_args)
   ->Unit(benchmark::kMillisecond);
 
 }

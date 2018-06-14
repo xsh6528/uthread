@@ -1,6 +1,6 @@
 # README
 
-uthread is a lightweight fiber/user threading library. Some of the current supported features include...
+uthread is a lightweight fiber/user threading library I wrote for fun as a learning experience. It's far from "complete" but includes the following core features...
 
 - Cooperative scheduling with fast context switching (~30M thread context switches/second on a single core)
 - Synchronization primitives like mutexes, condition variables, etc. for use between user threads

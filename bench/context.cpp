@@ -20,13 +20,13 @@ static void g() {
 /**
  * Benchmarks a context_get() + context_set(), a single context switch.
  */
-static void bench_uthread_switch(benchmark::State& state) {
+static void bench_uthread_context(benchmark::State& state) {
   for (auto _ : state) {
     g();
   }
 }
 
-BENCHMARK(bench_uthread_switch);
+BENCHMARK(bench_uthread_context);
 
 #ifdef __linux__
 
@@ -50,13 +50,13 @@ static void i() {
 /**
  * Benchmarks a getcontext() + setcontext(), a single context switch.
  */
-static void bench_sys_switch(benchmark::State& state) {
+static void bench_linux_context(benchmark::State& state) {
   for (auto _ : state) {
     i();
   }
 }
 
-BENCHMARK(bench_sys_switch);
+BENCHMARK(bench_linux_context);
 
 #endif
 
