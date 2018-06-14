@@ -55,8 +55,11 @@ void Io::add(Executor *executor) {
       // where there are no ready threads but benchmarks showed higher timer
       // latencies and little improvement in CPU time compared to using a busy
       // loop for > 4k sleeping threads. EVLOOP_ONCE MAY be worth considering
-      // for cases with predominantly file IO and a smaller number of threads,
-      // but I have not benchmarked this yet.
+      // for cases with predominantly file IO and a smaller number of threads.
+      // Another possible optimization is to perform IO multiplexing on a
+      // another kernel thread and avoid restarting the loop continuously. This
+      // however would required synchronization and might cancel out potential
+      // gains. tdlr; these ideas need to be benchmarked :)
       auto code = event_base_loop(base, EVLOOP_NONBLOCK);
       DCHECK_NE(code, -1);
       Executor::current()->yield();
