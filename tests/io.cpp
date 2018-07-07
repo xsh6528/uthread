@@ -1,5 +1,4 @@
 #include <cstring>
-#include <random>
 
 #include <uthread/gtest.hpp>
 #include <uthread/uthread.hpp>
@@ -8,86 +7,56 @@ namespace uthread {
 
 TEST(IoTest, IoShutsDownIfNoReadyThreads) {
   Executor exe;
-
   Io io;
   io.add(&exe);
 
   exe.run();
 }
 
-TEST(IoTest, UdpEcho) {
-  static constexpr auto kUdpMessageSize = 1024;
+TEST(IoTest, TcpEcho) {
+  static constexpr auto kMessageLen = 1024;
 
   Executor exe;
-
   Io io;
   io.add(&exe);
 
-  std::random_device r;
-  std::default_random_engine e(r());
-  std::uniform_int_distribution<int> d(1024, 65535);
-
-  auto server_addr = nix::socket_addr("127.0.0.1", d(e));
-
-  // UDP echo server, waits for one packet, responds, and shuts down.
   exe.add([&]() {
-    int fd = nix::socket(SOCK_DGRAM);
-    ASSERT_NE(fd, -1);
-    ASSERT_NE(nix::set_non_blocking(fd), -1);
-    ASSERT_NE(::bind(fd, (sockaddr *) &server_addr, sizeof(server_addr)), -1);
+    TcpListener listener;
+    ASSERT_EQ(listener.bind("127.0.0.1", 32000), 0);
 
-    io.sleep_on_fd(fd, Io::Event::Read);
+    TcpStream stream;
+    ASSERT_EQ(listener.accept(stream), 0);
 
-    sockaddr_in src_addr;
-    socklen_t src_addr_len = sizeof(src_addr);
-    char recv_buf[kUdpMessageSize + 1];
-    auto recv_len = ::recvfrom(fd, recv_buf, sizeof(recv_buf), 0,
-      (sockaddr *) &src_addr, &src_addr_len);
-
-    ASSERT_NE(recv_len, -1);
-
-    io.sleep_on_fd(fd, Io::Event::Write);
-
-    auto send_len = ::sendto(fd, recv_buf, recv_len, 0,
-      (sockaddr *) &src_addr, src_addr_len);
-
-    ASSERT_EQ(send_len, recv_len);
-
-    close(fd);
-  });
-
-  // Client that tests the echo server.
-  exe.add([&]() {
-    int fd = nix::socket(SOCK_DGRAM);
-    ASSERT_NE(fd, -1);
-    ASSERT_NE(nix::set_non_blocking(fd), -1);
-
-    char send_buf[kUdpMessageSize];
-    for (size_t i = 0; i < sizeof(send_buf); i++) {
-      send_buf[i] = d(e);
+    char buf[kMessageLen];
+    int p = 0;
+    while (p < kMessageLen) {
+      auto r = stream.recv(buf + p, kMessageLen - p);
+      ASSERT_GT(r, 0);
+      p += r;
     }
 
-    io.sleep_on_fd(fd, Io::Event::Write);
+    ASSERT_EQ(stream.send(buf, kMessageLen), kMessageLen);
+  });
 
-    auto send_len = ::sendto(fd, send_buf, sizeof(send_buf), 0,
-      (sockaddr *) &server_addr, sizeof(server_addr));
+  exe.add([&]() {
+    TcpStream stream;
+    ASSERT_EQ(stream.connect("127.0.0.1", 32000), 0);
 
-    ASSERT_EQ(send_len, sizeof(send_buf));
+    char send_buf[kMessageLen];
+    for (int p = 0; p < kMessageLen; p++)
+      send_buf[p] = p;
 
-    io.sleep_on_fd(fd, Io::Event::Read);
+    ASSERT_EQ(stream.send(send_buf, kMessageLen), kMessageLen);
 
-    sockaddr_in src_addr;
-    socklen_t src_addr_len = sizeof(src_addr);
-    char recv_buf[sizeof(send_buf) + 1];
-    auto recv_len = ::recvfrom(fd, recv_buf, sizeof(recv_buf), 0,
-      (sockaddr *) &src_addr, &src_addr_len);
+    char recv_buf[kMessageLen];
+    int p = 0;
+    while (p < kMessageLen) {
+      auto r = stream.recv(recv_buf + p, kMessageLen - p);
+      ASSERT_GT(r, 0);
+      p += r;
+    }
 
-    ASSERT_EQ(recv_len, sizeof(send_buf));
     ASSERT_EQ(std::memcmp(send_buf, recv_buf, sizeof(send_buf)), 0);
-    ASSERT_EQ(src_addr.sin_addr.s_addr, server_addr.sin_addr.s_addr);
-    ASSERT_EQ(src_addr.sin_port, server_addr.sin_port);
-
-    close(fd);
   });
 
   exe.run();
@@ -97,7 +66,6 @@ TEST(IoTest, SleepsForApproximateTime) {
   static constexpr auto kSleepTime =  std::chrono::milliseconds(100);
 
   Executor exe;
-
   Io io;
   io.add(&exe);
 
@@ -107,6 +75,5 @@ TEST(IoTest, SleepsForApproximateTime) {
 
   ASSERT_TAKES_APPROX_MS(exe.run(), 100);
 }
-
 
 }

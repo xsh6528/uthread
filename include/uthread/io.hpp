@@ -9,6 +9,14 @@
 
 namespace uthread {
 
+#define UTHREAD_IO_EVENT_READABLE(EVENT)    \
+(((EVENT) == ::uthread::Io::Event::Read) || \
+  ((EVENT) == ::uthread::Io::Event::ReadWrite))
+
+#define UTHREAD_IO_EVENT_WRITABLE(EVENT)    \
+(((EVENT) == ::uthread::Io::Event::Write) || \
+  ((EVENT) == ::uthread::Io::Event::ReadWrite))
+
 /**
  * A service for sleeping threads on file descriptor events, timers, etc.
  */
@@ -17,6 +25,7 @@ class Io {
   enum class Event {
     Read,
     Write,
+    ReadWrite,
   };
 
   Io();
@@ -29,7 +38,7 @@ class Io {
    * The thread is woken back up when the file discriptor is ready for reading
    * or writing, depending on the event.
    */
-  void sleep_on_fd(int fd, Event event);
+  Event sleep_on_fd(int fd, Event event);
 
   /**
    * Sleeps the current executing thread.
@@ -57,10 +66,19 @@ class Io {
    */
   void add(Executor *executor);
 
+  /**
+   * Returns the current IO service.
+   *
+   * This function NEVER returns a nullptr.
+   */
+  static Io *current();
+
  private:
-  void sleep(int fd, short eventlib_event, const timeval *timeout);  // NOLINT
+  Event sleep(int fd, short eventlib_event, const timeval *timeout);  // NOLINT
 
   event_base *base = nullptr;
+
+  static thread_local Io *this_io_;
 };
 
 }

@@ -6,7 +6,7 @@
 #include <uthread/executor.hpp>
 #include <uthread/io.hpp>
 #include <uthread/mutex.hpp>
-#include <uthread/nix.hpp>
+#include <uthread/socket.hpp>
 #include <uthread/queue.hpp>
 
 #endif  // UTHREAD_UTHREAD_HPP_

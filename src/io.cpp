@@ -4,9 +4,26 @@
 
 namespace uthread {
 
-static void event_cb(evutil_socket_t, short, void *arg) {
-  Executor::Thread *thread = reinterpret_cast<Executor::Thread *>(arg);
-  Executor::current()->ready(std::move(*thread));
+thread_local Io *Io::this_io_ = nullptr;
+
+struct IoSleeper {
+  Executor::Thread thread;
+
+  Io::Event event;
+};
+
+static void event_cb(evutil_socket_t, short event, void *arg) {
+  IoSleeper *sleeper = reinterpret_cast<IoSleeper *>(arg);
+
+  if ((event & (EV_READ | EV_WRITE)) == (EV_READ | EV_WRITE)) {
+    sleeper->event = Io::Event::ReadWrite;
+  } else if (event & EV_READ) {
+    sleeper->event = Io::Event::Read;
+  } else if (event & EV_WRITE) {
+    sleeper->event = Io::Event::Write;
+  }
+
+  Executor::current()->ready(std::move(sleeper->thread));
 }
 
 Io::Io() {
@@ -26,7 +43,7 @@ Io::~Io() {
   event_base_free(base);
 }
 
-void Io::sleep_on_fd(int fd, Event event) {
+Io::Event Io::sleep_on_fd(int fd, Event event) {
   short eventlib_event = 0;
 
   switch (event) {
@@ -36,17 +53,22 @@ void Io::sleep_on_fd(int fd, Event event) {
     case Event::Write:
       eventlib_event = EV_WRITE;
       break;
+    case Event::ReadWrite:
+      eventlib_event = EV_READ | EV_WRITE;
+      break;
     default:
       DCHECK(false) << "Bad event!";
   }
 
-  sleep(fd, eventlib_event, nullptr);
+  return sleep(fd, eventlib_event, nullptr);
 }
 
 void Io::add(Executor *executor) {
   DCHECK_NOTNULL(executor);
 
   executor->add([&]() {
+    this_io_ = this;
+
     // Execute the event loop as long as there is at least one other thread
     // that is or might perform IO.
     while (Executor::current()->alive() > 1) {
@@ -64,21 +86,32 @@ void Io::add(Executor *executor) {
       DCHECK_NE(code, -1);
       Executor::current()->yield();
     }
+
+    this_io_ = nullptr;
   });
 }
 
-void Io::sleep(int fd, short eventlib_event, const timeval *timeout) {
-  Executor::Thread thread;
+Io* Io::current() {
+  DCHECK_NOTNULL(this_io_);
 
+  return this_io_;
+}
+
+Io::Event Io::sleep(int fd, short eventlib_event, const timeval *timeout) {
+  DCHECK_NE(eventlib_event, 0);
+
+  IoSleeper sleeper;
   char buf[128];
   DCHECK_GE(sizeof(buf), event_get_struct_event_size());
   event *ev = reinterpret_cast<event *>(buf);
-  event_assign(ev, base, fd, eventlib_event, event_cb, &thread);
+  event_assign(ev, base, fd, eventlib_event, event_cb, &sleeper);
   event_add(ev, timeout);
 
   Executor::current()->sleep([&](auto thread_) {
-    thread = std::move(thread_);
+    sleeper.thread = std::move(thread_);
   });
+
+  return sleeper.event;
 }
 
 }

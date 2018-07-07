@@ -1,4 +1,5 @@
 #include <iostream>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -10,18 +11,22 @@
 DEFINE_uint32(port, 8000, "The TCP port number to run the server on.");
 
 struct User {
-  /** Name of the user. */
+  /** The name of this user. */
   std::string name;
-  /** The sequence number of the next message we should sent the user. */
+  /** The sequence number of the next message we should send this user. */
   size_t seq;
-  /** A file descriptor corresponding to this user's TCP connection. */
-  int fd;
+  /** The TCP connection for this user. */
+  std::shared_ptr<uthread::TcpStream> stream;
+
+  User() {
+    stream = std::make_shared<uthread::TcpStream>();
+  }
 };
 
 struct Room {
-  /** A message log which we do NOT truncate fo simplicity. */
+  /** The message log which we do NOT truncate fo simplicity. */
   std::vector<std::string> log;
-  /** A name allocator for new connections. */
+  /** The name allocator for new connections. */
   uthread::MpmcQueue<std::string> names;
 
   Room() {
@@ -60,35 +65,26 @@ struct Framer {
   }
 };
 
-/** An asynchronous IO service. */
-static uthread::nix::Io kIo;
-
 /** Our chat room. */
-static Room kRoom;
+static Room gRoom;
 
-/**
- * Posts a non-empty message by the specified user to the chat room.
- */
-static void post(const User &user, std::string s) {
+static void post(const User &user, std::string message) {
   static const std::string kWhitespace = " \t\r\n";
 
   // http://www.toptip.ca/2010/03/trim-leading-or-trailing-white-spaces.html
-  auto p = s.find_first_not_of(kWhitespace);
-  s.erase(0, p);
+  auto p = message.find_first_not_of(kWhitespace);
+  message.erase(0, p);
 
-  p = s.find_last_not_of(kWhitespace);
+  p = message.find_last_not_of(kWhitespace);
   if (p != std::string::npos)
-    s.erase(p + 1);
+    message.erase(p + 1);
 
-  if (s.empty())
+  if (message.empty())
     return;
 
-  kRoom.log.push_back(user.name + ": " + s + "\n");
+  gRoom.log.push_back(user.name + ": " + message + "\n");
 }
 
-/**
- * Works on serving a user connection.
- */
 static void worker(User user) {
   post(user, "Connected");
 
@@ -97,9 +93,9 @@ static void worker(User user) {
   // Send the log to this user.
   auto send = uthread::Executor::current()->add([&]() {
     while (ok) {
-      if (user.seq < kRoom.log.size()) {
-        const std::string &mess = kRoom.log[user.seq];
-        if (kIo.send_s(user.fd, mess.c_str(), mess.size()) != -1) {
+      if (user.seq < gRoom.log.size()) {
+        const std::string &mess = gRoom.log[user.seq];
+        if (user.stream->send(mess.c_str(), mess.size()) > 0) {
           user.seq++;
         } else {
           ok = false;
@@ -116,8 +112,8 @@ static void worker(User user) {
     char buf[1024];
 
     while (ok) {
-      auto r = kIo.read(user.fd, buf, sizeof(buf));
-      if (r > 0) {
+      auto r = user.stream->recv(buf, sizeof(buf));
+      if (r >= 0) {
         framer.append(buf, r);
       } else {
         ok = false;
@@ -130,42 +126,29 @@ static void worker(User user) {
 
   send.join();
   recv.join();
-  ::close(user.fd);
-  post(user, "Disconnected");
 
-  // Use the name for another user!
-  kRoom.names.push(std::move(user.name));
+  // Send a notification that the user has disconnected and reuse the name.
+  post(user, "Disconnected");
+  gRoom.names.push(user.name);
 }
 
-/**
- * Starts a TCP chat server.
- */
 static void run() {
-  int fd;
-
-  if ((fd = uthread::nix::listener("127.0.0.1", FLAGS_port)) == -1) {
-    LOG(ERROR) << ::strerror(errno);
-    ::exit(1);
-  }
+  uthread::TcpListener listener;
+  CHECK_NE(listener.bind("127.0.0.1", FLAGS_port), -1)
+    << "Error binding listener!";
 
   while (true) {
     // Wait for a name to become available. This is a primitive way of
     // limiting the number of users in our chat room.
     User user;
-    user.fd = -1;
-    kRoom.names.pop(user.name);
+    gRoom.names.pop(user.name);
 
     // A name has been allocated, so now we just wait for a connection.
-    while (user.fd == -1) {
-      kIo.sleep_on_fd(fd, uthread::Io::Event::Read);
-      user.fd = ::accept(fd, nullptr, nullptr);
-    }
+    if (listener.accept(*user.stream) != 0)
+      LOG(ERROR) << "Error accepting connection!";
 
-    user.seq = kRoom.log.size();
-
-    uthread::Executor::current()->add([user]() {
-      worker(user);
-    });
+    user.seq = gRoom.log.size();
+    uthread::Executor::current()->add([user]() { worker(user); });
   }
 }
 
@@ -174,16 +157,15 @@ int main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   google::InitGoogleLogging(argv[0]);
 
-  std::cout << "Running a chat server;  Use 'ncat 127.0.0.1 "
+  std::cout << "Running a chat server; Use 'ncat 127.0.0.1 "
             << FLAGS_port
             << "' to send messages."
             << std::endl;
 
   uthread::Executor exe;
-  kIo.add(&exe);
-
+  uthread::Io io;
+  io.add(&exe);
   exe.add(run);
-
   exe.run();
 
   return 0;

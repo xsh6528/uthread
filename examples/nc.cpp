@@ -10,44 +10,49 @@ DEFINE_string(host, "127.0.0.1", "The IPv4 address of the host.");
 DEFINE_uint32(port, 8000, "The port to connect to on the host.");
 
 /** An asynchronous IO service. */
-static uthread::nix::Io kIo;
+static uthread::Io gIo;
 
-/** File descriptor for the TCP connection. */
-static int kTcpFd;
+/** A TCP connection to the endpoint. */
+static uthread::TcpStream gStream;
 
-/**
- * Sends a stream of data from stdin to the endpoint.
- */
-static void send_worker() {
+static void sender() {
   char buf[1024];
 
   while (true) {
-    auto r = kIo.read(::uthread::nix::kStdinFd, buf, sizeof(buf));
-    CHECK_GE(r, 0);
+    gIo.sleep_on_fd(STDIN_FILENO, uthread::Io::Event::Read);
+    auto r = read(STDIN_FILENO, buf, sizeof(buf));
 
-    if (kIo.send_s(kTcpFd, buf, r) == -1) {
-      return;
+    if (r == -1) {
+        std::cerr << "Error reading stdin." << std::endl;
+        exit(1);
+    }
+
+    switch (gStream.send(buf, r)) {
+      case uthread::TcpStream::kErrClosed:
+        std::cerr << "TCP connection closed." << std::endl;
+        exit(0);
+      case uthread::TcpStream::kErrOs:
+        std::cerr << "Error sending via TCP stream." << std::endl;
+        exit(1);
     }
   }
 }
 
-/**
- * Prints the inbound TCP stream to stdout.
- */
-static void recv_worker() {
+static void reader() {
   char buf[1024];
 
   while (true) {
-    auto r = kIo.read(kTcpFd, buf, sizeof(buf));
-    if (r == 0) {
-      std::cout << "Connection closed." << std::endl;
-      ::exit(0);
-    } else if (r == -1) {
-      LOG(ERROR) << "TCP read: " << ::strerror(errno);
-      ::exit(1);
+    auto r = gStream.recv(buf, sizeof(buf));
+    switch (r) {
+      case uthread::TcpStream::kErrClosed:
+        std::cerr << "TCP connection closed." << std::endl;
+        exit(0);
+      case uthread::TcpStream::kErrOs:
+        std::cerr << "Error receiving from TCP stream." << std::endl;
+        exit(1);
     }
 
-    CHECK_GE(kIo.send_f(::uthread::nix::kStdoutFd, buf, r), 0);
+    std::cout << std::string(buf, r);
   }
 }
 
@@ -62,27 +67,15 @@ int main(int argc, char* argv[]) {
             << "echo server."
             << std::endl;
 
-  if ((kTcpFd = uthread::nix::socket(SOCK_STREAM)) == -1) {
-    LOG(ERROR) << ::strerror(errno);
-    ::exit(1);
-  }
-
-  auto server_addr = uthread::nix::socket_addr(FLAGS_host, FLAGS_port);
-  CHECK_NE(::connect(kTcpFd, (sockaddr *) &server_addr, sizeof(server_addr)),
-    -1) << "Connection to endpoint has failed!";
-  CHECK_NE(::uthread::nix::set_non_blocking(kTcpFd), -1);
-  CHECK_NE(::uthread::nix::set_non_blocking(::uthread::nix::kStdinFd), -1);
-  CHECK_NE(::uthread::nix::set_non_blocking(::uthread::nix::kStdoutFd), -1);
+  CHECK_NE(gStream.connect(FLAGS_host, FLAGS_port), -1)
+    << "Error connecting to endpoint!";
+  CHECK_NE(uthread::set_async(STDIN_FILENO), -1);
 
   uthread::Executor exe;
-  kIo.add(&exe);
-
-  exe.add(send_worker);
-  exe.add(recv_worker);
-
+  gIo.add(&exe);
+  exe.add(sender);
+  exe.add(reader);
   exe.run();
-
-  ::close(kTcpFd);
 
   return 0;
 }
