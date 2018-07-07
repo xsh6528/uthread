@@ -92,29 +92,21 @@ TEST(ExecutorTest, JoinOnRunningThread) {
 
   auto f = exe.add([&]() {
     ASSERT_EQ(x, 0);
-    while (x < 100) {
-      Executor::current()->yield();
-    }
+    Executor::current()->yield();
+    ASSERT_EQ(x, 0);
+    x = 1;
   });
 
   auto g = exe.add([&]() {
     ASSERT_EQ(x, 0);
-    while (x < 100) {
-      x++;
-      Executor::current()->yield();
-    }
-  });
-
-  auto h = exe.add([&]() {
     f.join();
-    g.join();
-
-    ASSERT_EQ(x, 100);
+    ASSERT_EQ(x, 1);
+    x = 2;
   });
 
   exe.run();
 
-  ASSERT_EQ(x, 100);
+  ASSERT_EQ(x, 2);
 }
 
 TEST(ExecutorTest, JoinOnFinishedThread) {
@@ -124,26 +116,20 @@ TEST(ExecutorTest, JoinOnFinishedThread) {
 
   auto f = exe.add([&]() {
     ASSERT_EQ(x, 0);
-    while (x < 100) {
-      Executor::current()->yield();
-    }
+    x = 1;
   });
 
   auto g = exe.add([&]() {
-    ASSERT_EQ(x, 0);
-    while (x < 100) {
-      x++;
+    while (x != 1) {
       Executor::current()->yield();
     }
-
     f.join();
-
-    ASSERT_EQ(x, 100);
+    x = 2;
   });
 
   exe.run();
 
-  ASSERT_EQ(x, 100);
+  ASSERT_EQ(x, 2);
 }
 
 TEST(ExecutorTest, ThreadDestroyedOnFinish) {

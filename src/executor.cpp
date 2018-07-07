@@ -78,6 +78,14 @@ void Executor::thread_f(void *_) {
     std::terminate();
   }
 
+
+  auto joined = this_executor_->this_thread_.state_->joined.get();
+
+  while (joined->size() > 0) {
+    this_executor_->ready(std::move(joined->front()));
+    joined->pop();
+  }
+
   this_executor_->alive_--;
   context_set(&(this_executor_->executor_));
 }

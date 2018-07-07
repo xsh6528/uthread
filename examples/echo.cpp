@@ -1,3 +1,5 @@
+#include <iostream>
+
 #include <gflags/gflags.h>
 #include <glog/logging.h>
 
@@ -8,41 +10,10 @@ DEFINE_uint32(threads, 1, "The number of connection/worker threads to spawn.");
 DEFINE_uint32(port, 8000, "The TCP port number to run the server on.");
 
 /** An asynchronous IO service. */
-static uthread::Io kIo;
+static uthread::nix::Io kIo;
 
 /** A queue of accepted connections for which workers echo. */
-static uthread::MpmcQueue<int> kConn;
-
-/**
- * Echo's the data from a single read(...) back to the sender.
- *
- * Returns -1 if an error occurred (eg. connection closed) and 0 otherwise.
- */
-static int echorw(int fd) {
-  char buf[2048];
-
-  kIo.sleep_on_fd(fd, uthread::Io::Event::Read);
-
-  int r = ::read(fd, buf, sizeof(buf));
-  if (r == 0) {
-    return -1;
-  } else if (r == -1) {
-    return 0;
-  }
-
-  int i = 0;
-  while (i < r) {
-    kIo.sleep_on_fd(fd, uthread::Io::Event::Write);
-
-    int w = ::write(fd, buf + i, r - i);
-    if (w == -1) {
-      return -1;
-    }
-    i += w;
-  }
-
-  return 0;
-}
+static uthread::MpmcQueue<int> kConn { 1 };
 
 /**
  * Waits for accepted TCP connections in kConn and echo's inbound data.
@@ -51,11 +22,15 @@ static int echorw(int fd) {
  * to be spawned to handle more concurrent connections.
  */
 static void worker() {
+  char buf[1024];
+
   while (true) {
     int fd;
     kConn.pop(fd);
 
-    while (echorw(fd) != -1) {
+    while (true) {
+      auto r = kIo.read(fd, buf, sizeof(buf));
+      if (r == -1 || kIo.send_s(fd, buf, r) == -1) break;
     }
 
     ::close(fd);
@@ -65,32 +40,13 @@ static void worker() {
 /**
  * Starts a TCP echo server and pushes accepted connections to kConn.
  */
-static void listener() {
-  LOG(INFO) << "Starting server...";
+static void run() {
+  int fd;
 
-  int fd = uthread::nix::socket(SOCK_STREAM);
-  if (fd == -1) {
+  if ((fd = uthread::nix::listener("127.0.0.1", FLAGS_port)) == -1) {
     LOG(ERROR) << ::strerror(errno);
     ::exit(1);
   }
-
-  CHECK_NE(::uthread::nix::set_non_blocking(fd), -1);
-
-  auto server_addr = uthread::nix::socket_addr("127.0.0.1", FLAGS_port);
-
-  if (::bind(fd, (sockaddr *) &server_addr, sizeof(server_addr)) == -1) {
-    LOG(ERROR) << ::strerror(errno);
-    ::exit(1);
-  }
-
-  if (::listen(fd, 16) == -1) {
-    LOG(ERROR) << ::strerror(errno);
-    ::exit(1);
-  }
-
-  LOG(INFO) << "Running TCP echo server;  Use 'nc 127.0.0.1 "
-            << FLAGS_port
-            << "' to send messages.";
 
   while (true) {
     int conn = -1;
@@ -107,6 +63,11 @@ int main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   google::InitGoogleLogging(argv[0]);
 
+  std::cout << "Running TCP echo server;  Use 'ncat 127.0.0.1 "
+            << FLAGS_port
+            << "' to send messages."
+            << std::endl;
+
   uthread::Executor exe;
   kIo.add(&exe);
 
@@ -114,7 +75,7 @@ int main(int argc, char* argv[]) {
     exe.add(worker);
   }
 
-  exe.add(listener);
+  exe.add(run);
 
   exe.run();
 

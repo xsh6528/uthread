@@ -23,6 +23,7 @@ Once you have a high level understanding of the executor take a look at the [Mut
 - [tests/io.cpp](tests/io.cpp) for an example of IO notifications
 - [examples/echo.cpp](examples/echo.cpp) for an example of a TCP echo server
 - [examples/nc.cpp](examples/nc.cpp) for a bare-bones nc clone
+- [examples/chat.cpp](examples/chat.cpp) for a basic TCP chat server
 
 You can run example `<X>` via `GLOG_logtostderr=1 ./<X>` after building.
 
