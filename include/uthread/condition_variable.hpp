@@ -23,7 +23,7 @@ class ConditionVariable {
    */
   void wake_one();
 
-    /**
+  /**
    * Wakes up ALL sleeping threads.
    */
   void wake_all();

@@ -35,7 +35,7 @@ A [Vagrant](https://www.vagrantup.com/) VM is provided with a complete developme
 vagrant up && vagrant ssh
 ```
 
-Once the VM you can perform a build...
+Once the VM is up you can perform a build...
 
 ```
 cd /uthread                           && \

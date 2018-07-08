@@ -117,7 +117,7 @@ int TcpStream::connect(const std::string &addr, int port) {
   UniqueFd fd(raw);
 
   opt = 1;
-  if (::setsockopt(fd.raw(), SOL_SOCKET, SO_REUSEADDR, (const void *) &opt,
+  if (setsockopt(fd.raw(), SOL_SOCKET, SO_REUSEADDR, (const void *) &opt,
     sizeof(opt)) == -1) {
     return kErrOs;
   }
@@ -125,7 +125,7 @@ int TcpStream::connect(const std::string &addr, int port) {
 // https://nwat.xyz/blog/2014/01/16/porting-msg_more-and-msg_nosigpipe-to-osx/
 #ifndef MSG_NOSIGNAL
   opt = 1;
-  if (::setsockopt(fd.raw(), SOL_SOCKET, SO_NOSIGPIPE, (const void *) &opt,
+  if (setsockopt(fd.raw(), SOL_SOCKET, SO_NOSIGPIPE, (const void *) &opt,
     sizeof(opt)) == -1) {
     return kErrOs;
   }
