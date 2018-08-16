@@ -80,18 +80,7 @@ class Executor {
     /**
      * Creates a user thread that executes function f.
      */
-    template<typename F>
-    explicit Thread(F f) {
-      state_ = std::make_unique<State>();
-      state_->f = std::move(f);
-      state_->stack = std::make_unique<char[]>(kStackSize);
-      context_with_f(&(state_->context),
-                     state_->stack.get(),
-                     kStackSize,
-                     thread_f,
-                     nullptr);
-      state_->joined = std::make_shared<std::queue<Thread>>();
-    }
+    explicit Thread(std::function<void()> f);
 
     std::unique_ptr<State> state_;
 
@@ -101,14 +90,7 @@ class Executor {
   /**
    * Adds a user thread which executes function f.
    */
-  template<typename F>
-  Thread::Ref add(F f) {
-    Thread thread(std::move(f));
-    auto ref = thread.ref();
-    ready_.push(std::move(thread));
-    alive_++;
-    return ref;
-  }
+  Thread::Ref add(std::function<void()> f);
 
   /**
    * Pushes a user thread onto the ready queue for future execution.

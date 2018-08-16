@@ -5,22 +5,22 @@
 namespace uthread {
 
 /**
- * This benchmark estimates the cost of two yields. The first yield context
- * switches from thread one to thread two and the second yield switches in the
- * opposite direction. There is some overhead in the estimate so the true cost
- * of a yield is "a bit less" than half of the time this benchmark estimates.
+ * This benchmark estimates the cost of yielding from one thread to another and
+ * back.
  */
-static void bench_yield_twice(benchmark::State& state) {
+static void bench_executor_yield_pong(benchmark::State& state) {
+  bool benching = true;
   Executor exe;
 
   exe.add([&]() {
     for (auto _ : state) {
       Executor::current()->yield();
     }
+    benching = false;
   });
 
   exe.add([&]() {
-    while (Executor::current()->alive() == 2) {
+    while (benching) {
       Executor::current()->yield();
     }
   });
@@ -28,6 +28,38 @@ static void bench_yield_twice(benchmark::State& state) {
   exe.run();
 }
 
-BENCHMARK(bench_yield_twice);
+/**
+ * This benchmark estimates the cost of sleeping a thread and readying it up
+ * from another.
+ */
+static void bench_executor_sleep_and_ready(benchmark::State& state) {
+  bool benching = true;
+  Executor::Thread thread;
+  Executor exe;
+
+  exe.add([&]() {
+    for (auto _ : state) {
+      Executor::current()->sleep([&](auto thread_) {
+        thread = std::move(thread_);
+      });
+    }
+    benching = false;
+  });
+
+  exe.add([&]() {
+    auto executor = Executor::current();
+    if (!thread)
+      executor->yield();
+    while (benching) {
+      executor->ready(std::move(thread));
+      executor->yield();
+    }
+  });
+
+  exe.run();
+}
+
+BENCHMARK(bench_executor_yield_pong);
+BENCHMARK(bench_executor_sleep_and_ready);
 
 }

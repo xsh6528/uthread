@@ -54,7 +54,7 @@ TEST(ExecutorTest, SleepThreadThenReady) {
     Executor::current()->yield();
     ASSERT_EQ(x, 1);
     x = 2;
-    Executor::current()->add(std::move(thread));
+    Executor::current()->ready(std::move(thread));
     Executor::current()->yield();
     ASSERT_EQ(x, 3);
   });

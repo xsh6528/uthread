@@ -4,25 +4,16 @@
 
 namespace uthread {
 
-static void bench_sleep_args(benchmark::internal::Benchmark* bench) {
-  for (int threads = 1; threads <= 32768; threads *= 8) {
-    for (int sleeps = 1; sleeps <= 512; sleeps *= 8) {
-      bench->Args({threads, sleeps});
-    }
-  }
-}
-
 /**
  * This benchmark estimates the cost of sleeping from many threads. There are
  * N threads sleeping M times for 1 ms. In an ideal case, this benchmark would
  * take M ms, but of course there is scheduling and context switching overhead
  * with more threads and sleep calls. That's what we are measuring here.
  */
-static void bench_sleep(benchmark::State& state) {
+static void bench_io_sleep(benchmark::State& state) {
   for (auto _ : state) {
     state.PauseTiming();
     Executor exe;
-
     Io io;
     io.add(&exe);
 
@@ -39,8 +30,8 @@ static void bench_sleep(benchmark::State& state) {
   }
 }
 
-BENCHMARK(bench_sleep)
-  ->Apply(bench_sleep_args)
+BENCHMARK(bench_io_sleep)
+  ->Ranges({{1, 1<<15}, {1, 512}})
   ->Unit(benchmark::kMillisecond);
 
 }
