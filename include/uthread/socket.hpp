@@ -70,6 +70,11 @@ class TcpStream {
   friend class TcpListener;
 };
 
+struct TcpBindOptions {
+  /** Allows reusing a previous TCP addr/port combination still in TIME_WAIT. */
+  bool allow_addr_reuse = false;
+};
+
 /**
  * A TCP listener for accepting streams/connections.
  */
@@ -91,7 +96,10 @@ class TcpListener {
    *
    * Returns an error constant or 0 on success.
    */
-  int bind(const std::string &addr, int port);
+  int bind(
+    const std::string &addr,
+    int port,
+    TcpBindOptions options = TcpBindOptions {});
 
  private:
   UniqueFd fd_;

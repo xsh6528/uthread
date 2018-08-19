@@ -24,7 +24,9 @@ TEST(IoTest, TcpEcho) {
 
   exe.add([&]() {
     TcpListener listener;
-    ASSERT_EQ(listener.bind("127.0.0.1", 32000), 0);
+    TcpBindOptions options;
+    options.allow_addr_reuse = true;
+    ASSERT_EQ(listener.bind("127.0.0.1", 32000, options), 0);
 
     TcpStream stream;
     ASSERT_EQ(listener.accept(stream), 0);

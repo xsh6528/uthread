@@ -166,7 +166,10 @@ int TcpListener::accept(TcpStream &stream) {
   return -1;
 }
 
-int TcpListener::bind(const std::string &addr, int port) {
+int TcpListener::bind(
+    const std::string &addr,
+    int port,
+    TcpBindOptions options) {
   if (fd_.raw() != -1) {
     return kErrOpen;
   }
@@ -179,6 +182,12 @@ int TcpListener::bind(const std::string &addr, int port) {
   UniqueFd fd(raw);
 
   if (set_async(fd.raw()) == -1) {
+    return kErrOs;
+  }
+
+  int opt = 1;
+  if (options.allow_addr_reuse && setsockopt(fd.raw(), SOL_SOCKET,
+    SO_REUSEADDR, (const void *) &opt, sizeof(opt)) == -1) {
     return kErrOs;
   }
 
