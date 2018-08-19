@@ -20,10 +20,10 @@ class LibeventBase {
   /**
    * Returns a pointer to the event base.
    */
-  event_base* raw();
+  event_base *raw();
 
  private:
-  event_base* base_ = nullptr;
+  event_base *base_ = nullptr;
 };
 
 }

@@ -5,7 +5,7 @@
 namespace uthread {
 
 struct Arg {
-  event* ev;
+  event *ev;
   int add;
 };
 constexpr auto kMaxEvs = 1 << 15;
@@ -14,7 +14,7 @@ constexpr struct timeval kOneMs = {0, 1000};
 
 Arg args[kMaxEvs] = {};
 
-static void cb(evutil_socket_t, short, void* argraw) {
+static void cb(evutil_socket_t, short, void *argraw) {
   auto arg = reinterpret_cast<Arg*>(argraw);
   arg->add--;
   if (arg->add <= 0) return;
@@ -27,16 +27,16 @@ static void cb(evutil_socket_t, short, void* argraw) {
  * activate each one 1000 times, expecting a wall clock time of ~1s for the
  * entire benchmark if there was no overhead.
  */
-static void bench_libevent_timer_heard(benchmark::State& state) {
+static void bench_libevent_timer_heard(benchmark::State &state) {
   LibeventBase eb;
 
-  for (Arg* arg = args; arg < args + kMaxEvs; arg++) {
+  for (Arg *arg = args; arg < args + kMaxEvs; arg++) {
     arg->ev = event_new(eb.raw(), -1, 0, cb, arg);
     CHECK_NOTNULL(arg->ev);
   }
 
   for (auto _ : state) {
-    for (Arg* arg = args; arg < args + state.range(0); arg++) {
+    for (Arg *arg = args; arg < args + state.range(0); arg++) {
       arg->add = 1000;
       event_add(arg->ev, &kOneMs);
     }
@@ -44,7 +44,7 @@ static void bench_libevent_timer_heard(benchmark::State& state) {
     event_base_dispatch(eb.raw());
   }
 
-  for (Arg* arg = args; arg < args + kMaxEvs; arg++)
+  for (Arg *arg = args; arg < args + kMaxEvs; arg++)
     event_free(arg->ev);
 }
 

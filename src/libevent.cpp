@@ -21,7 +21,7 @@ LibeventBase::~LibeventBase() {
   event_base_free(base_);
 }
 
-event_base* LibeventBase::raw() {
+event_base *LibeventBase::raw() {
   return base_;
 }
 

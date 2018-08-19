@@ -56,7 +56,7 @@ static void reader() {
   }
 }
 
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
   gflags::SetUsageMessage("A stripped down (TCP-only) version of netcat.");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   google::InitGoogleLogging(argv[0]);

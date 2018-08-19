@@ -11,7 +11,7 @@ namespace uthread {
  * with more threads and sleep calls. That's what we are measuring here.
  */
 template<Io::Timer kTimer>
-static void bench_io_sleep(benchmark::State& state) {
+static void bench_io_sleep(benchmark::State &state) {
   for (auto _ : state) {
     state.PauseTiming();
     Executor exe;

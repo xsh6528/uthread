@@ -68,7 +68,7 @@ void Io::add(Executor *executor) {
   });
 }
 
-Io* Io::current() {
+Io *Io::current() {
   DCHECK_NOTNULL(this_io_);
 
   return this_io_;

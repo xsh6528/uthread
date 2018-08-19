@@ -8,7 +8,7 @@ namespace uthread {
  * This benchmark estimates the cost of yielding from one thread to another and
  * back.
  */
-static void bench_executor_yield_pong(benchmark::State& state) {
+static void bench_executor_yield_pong(benchmark::State &state) {
   bool benching = true;
   Executor exe;
 
@@ -32,7 +32,7 @@ static void bench_executor_yield_pong(benchmark::State& state) {
  * This benchmark estimates the cost of sleeping a thread and readying it up
  * from another.
  */
-static void bench_executor_sleep_and_ready(benchmark::State& state) {
+static void bench_executor_sleep_and_ready(benchmark::State &state) {
   bool benching = true;
   Executor::Thread thread;
   Executor exe;
