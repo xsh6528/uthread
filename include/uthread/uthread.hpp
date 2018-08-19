@@ -5,6 +5,7 @@
 #include <uthread/context.hpp>
 #include <uthread/executor.hpp>
 #include <uthread/io.hpp>
+#include <uthread/libevent.hpp>
 #include <uthread/mutex.hpp>
 #include <uthread/socket.hpp>
 #include <uthread/queue.hpp>

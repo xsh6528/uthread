@@ -10,6 +10,7 @@ namespace uthread {
  * take M ms, but of course there is scheduling and context switching overhead
  * with more threads and sleep calls. That's what we are measuring here.
  */
+template<Io::Timer kTimer>
 static void bench_io_sleep(benchmark::State& state) {
   for (auto _ : state) {
     state.PauseTiming();
@@ -20,7 +21,7 @@ static void bench_io_sleep(benchmark::State& state) {
     for (int threads = 0; threads < state.range(0); threads++) {
       exe.add([&]() {
         for (int sleeps = 0; sleeps < state.range(1); sleeps++) {
-          io.sleep_for(std::chrono::milliseconds(1));
+          io.sleep_for(std::chrono::milliseconds(1), kTimer);
         }
       });
     }
@@ -30,8 +31,14 @@ static void bench_io_sleep(benchmark::State& state) {
   }
 }
 
-BENCHMARK(bench_io_sleep)
+BENCHMARK_TEMPLATE(bench_io_sleep, Io::Timer::Libevent)
   ->Ranges({{1, 1<<15}, {1, 512}})
-  ->Unit(benchmark::kMillisecond);
+  ->Unit(benchmark::kMillisecond)
+  ->UseRealTime();
+
+BENCHMARK_TEMPLATE(bench_io_sleep, Io::Timer::CpuLoop)
+  ->Ranges({{1, 1<<15}, {1, 512}})
+  ->Unit(benchmark::kMillisecond)
+  ->UseRealTime();
 
 }

@@ -81,6 +81,10 @@ size_t Executor::alive() {
   return alive_;
 }
 
+size_t Executor::ready() {
+  return ready_.size();
+}
+
 Executor *Executor::current() {
   DCHECK_NOTNULL(this_executor_);
 

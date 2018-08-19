@@ -138,6 +138,11 @@ class Executor {
   size_t alive();
 
   /**
+   * Returns the number of threads ready to run.
+   */
+  size_t ready();
+
+  /**
    * Returns the current executor.
    *
    * This function NEVER returns a nullptr.

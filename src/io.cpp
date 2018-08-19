@@ -13,7 +13,7 @@ struct IoSleeper {
 };
 
 static void event_cb(evutil_socket_t, short event, void *arg) {
-  IoSleeper *sleeper = reinterpret_cast<IoSleeper *>(arg);
+  IoSleeper *sleeper = reinterpret_cast<IoSleeper*>(arg);
 
   if ((event & (EV_READ | EV_WRITE)) == (EV_READ | EV_WRITE)) {
     sleeper->event = Io::Event::ReadWrite;
@@ -24,23 +24,6 @@ static void event_cb(evutil_socket_t, short event, void *arg) {
   }
 
   Executor::current()->ready(std::move(sleeper->thread));
-}
-
-Io::Io() {
-  auto config = event_config_new();
-  CHECK_NOTNULL(config);
-
-  CHECK_EQ(event_config_set_flag(config, EVENT_BASE_FLAG_NOLOCK), 0);
-  CHECK_EQ(event_config_set_flag(config, EVENT_BASE_FLAG_PRECISE_TIMER), 0);
-
-  base = event_base_new_with_config(config);
-  CHECK_NOTNULL(base);
-
-  event_config_free(config);
-}
-
-Io::~Io() {
-  event_base_free(base);
 }
 
 Io::Event Io::sleep_on_fd(int fd, Event event) {
@@ -67,24 +50,18 @@ void Io::add(Executor *executor) {
   DCHECK_NOTNULL(executor);
 
   executor->add([&]() {
+    auto executor = Executor::current();
     this_io_ = this;
 
-    // Execute the event loop as long as there is at least one other thread
-    // that is or might perform IO.
-    while (Executor::current()->alive() > 1) {
-      // Don't block! We might have other threads to context switch into if no
-      // events have triggered. EVLOOP_ONCE was considered for the special case
-      // where there are no ready threads but benchmarks showed higher timer
-      // latencies and little improvement in CPU time compared to using a busy
-      // loop for > 4k sleeping threads. EVLOOP_ONCE MAY be worth considering
-      // for cases with predominantly file IO and a smaller number of threads.
-      // Another possible optimization is to perform IO multiplexing on a
-      // another kernel thread and avoid restarting the loop continuously. This
-      // however would required synchronization and might cancel out potential
-      // gains. tdlr; these ideas need to be benchmarked :)
-      auto code = event_base_loop(base, EVLOOP_NONBLOCK);
+    // Are there any other threads which might perform IO?
+    while (executor->alive() > 1) {
+      // Are there any other runnable threads we should avoid blocking?
+      auto flags = executor->ready() == 0
+        ? EVLOOP_ONCE
+        : EVLOOP_NONBLOCK;
+      auto code = event_base_loop(base_.raw(), flags);
       DCHECK_NE(code, -1);
-      Executor::current()->yield();
+      executor->yield();
     }
 
     this_io_ = nullptr;
@@ -104,7 +81,7 @@ Io::Event Io::sleep(int fd, short eventlib_event, const timeval *timeout) {
   char buf[128];
   DCHECK_GE(sizeof(buf), event_get_struct_event_size());
   event *ev = reinterpret_cast<event *>(buf);
-  event_assign(ev, base, fd, eventlib_event, event_cb, &sleeper);
+  event_assign(ev, base_.raw(), fd, eventlib_event, event_cb, &sleeper);
   event_add(ev, timeout);
 
   Executor::current()->sleep([&](auto thread_) {
