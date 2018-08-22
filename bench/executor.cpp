@@ -14,14 +14,14 @@ static void bench_executor_yield_pong(benchmark::State &state) {
 
   exe.add([&]() {
     for (auto _ : state) {
-      Executor::current()->yield();
+      Executor::get()->yield();
     }
     benching = false;
   });
 
   exe.add([&]() {
     while (benching) {
-      Executor::current()->yield();
+      Executor::get()->yield();
     }
   });
 
@@ -39,7 +39,7 @@ static void bench_executor_sleep_and_ready(benchmark::State &state) {
 
   exe.add([&]() {
     for (auto _ : state) {
-      Executor::current()->sleep([&](auto thread_) {
+      Executor::get()->sleep([&](auto thread_) {
         thread = std::move(thread_);
       });
     }
@@ -47,7 +47,7 @@ static void bench_executor_sleep_and_ready(benchmark::State &state) {
   });
 
   exe.add([&]() {
-    auto executor = Executor::current();
+    auto executor = Executor::get();
     if (!thread)
       executor->yield();
     while (benching) {

@@ -10,7 +10,7 @@ void Executor::Thread::Ref::join() {
     return;
   }
 
-  Executor::current()->sleep([&](auto thread) {
+  Executor::get()->sleep([&](auto thread) {
     joined->push(std::move(thread));
   });
 }
@@ -85,7 +85,7 @@ size_t Executor::ready() {
   return ready_.size();
 }
 
-Executor *Executor::current() {
+Executor *Executor::get() {
   DCHECK_NOTNULL(this_executor_);
 
   return this_executor_;

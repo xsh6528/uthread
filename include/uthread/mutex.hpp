@@ -66,7 +66,7 @@ class Lock {
   template<typename F>
   void sleep(F f) {
     mutex_->release();
-    Executor::current()->sleep(f);
+    Executor::get()->sleep(f);
     mutex_->acquire();
   }
 

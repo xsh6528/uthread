@@ -32,7 +32,7 @@ TEST(MutexTest, AcquireWithContension) {
 
       // Let's make sure the lock keeps other threads away...
       for (int j = 0; j < 100; j++) {
-        Executor::current()->yield();
+        Executor::get()->yield();
         ASSERT_EQ(x, copy);
       }
     });

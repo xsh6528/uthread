@@ -65,7 +65,7 @@ int UniqueFd::raw() const {
 int TcpStream::recv(void *buf, int buf_size) {
   CHECK_GE(buf_size, 0);
 
-  Io::current()->sleep_on_fd(fd_.raw(), Io::Event::Read);
+  Io::get()->sleep_on_fd(fd_.raw(), Io::Event::Read);
   auto r = ::recv(fd_.raw(), buf, buf_size, 0);
   if (r == 0) return kErrClosed;
   if (r == -1) return kErrOs;
@@ -78,7 +78,7 @@ int TcpStream::send(const void *buf, int buf_size) {
   int p = 0;
 
   while (p < buf_size) {
-    auto ev = Io::current()->sleep_on_fd(fd_.raw(), Io::Event::ReadWrite);
+    auto ev = Io::get()->sleep_on_fd(fd_.raw(), Io::Event::ReadWrite);
 
     if (UTHREAD_IO_EVENT_WRITABLE(ev)) {
 #ifdef MSG_NOSIGNAL
@@ -152,7 +152,7 @@ int TcpStream::connect(const std::string &addr, int port) {
 
 int TcpListener::accept(TcpStream &stream) {
   while (true) {
-    Io::current()->sleep_on_fd(fd_.raw(), Io::Event::Read);
+    Io::get()->sleep_on_fd(fd_.raw(), Io::Event::Read);
     auto fd = ::accept(fd_.raw(), nullptr, nullptr);
     if (fd == -1 && errno != EAGAIN && errno != EWOULDBLOCK) {
       return kErrOs;
@@ -162,7 +162,7 @@ int TcpListener::accept(TcpStream &stream) {
     }
   }
 
-  Io::current()->sleep_on_fd(fd_.raw(), Io::Event::Read);
+  Io::get()->sleep_on_fd(fd_.raw(), Io::Event::Read);
   return -1;
 }
 

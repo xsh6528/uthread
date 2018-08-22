@@ -91,7 +91,7 @@ static void worker(User user) {
   auto ok = true;
 
   // Send the log to this user.
-  auto send = uthread::Executor::current()->add([&]() {
+  auto send = uthread::Executor::get()->add([&]() {
     while (ok) {
       if (user.seq < gRoom.log.size()) {
         const std::string &mess = gRoom.log[user.seq];
@@ -101,13 +101,13 @@ static void worker(User user) {
           ok = false;
         }
       } else {
-        uthread::Executor::current()->yield();
+        uthread::Executor::get()->yield();
       }
     }
   });
 
   // Append messages from this user to the log.
-  auto recv = uthread::Executor::current()->add([&]() {
+  auto recv = uthread::Executor::get()->add([&]() {
     Framer framer;
     char buf[1024];
 
@@ -148,7 +148,7 @@ static void run() {
       LOG(ERROR) << "Error accepting connection!";
 
     user.seq = gRoom.log.size();
-    uthread::Executor::current()->add([user]() { worker(user); });
+    uthread::Executor::get()->add([user]() { worker(user); });
   }
 }
 

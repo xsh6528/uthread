@@ -23,19 +23,19 @@ TEST(ExecutorTest, SpawnTwoThreadsAndYield) {
 
   exe.add([&]() {
     ASSERT_EQ(x, 0);
-    Executor::current()->yield();
+    Executor::get()->yield();
     ASSERT_EQ(x, 1);
-    Executor::current()->yield();
+    Executor::get()->yield();
     ASSERT_EQ(x, 2);
   });
 
   exe.add([&]() {
     ASSERT_EQ(x, 0);
     x = 1;
-    Executor::current()->yield();
+    Executor::get()->yield();
     ASSERT_EQ(x, 1);
     x = 2;
-    Executor::current()->yield();
+    Executor::get()->yield();
     ASSERT_EQ(x, 2);
   });
 
@@ -51,18 +51,18 @@ TEST(ExecutorTest, SleepThreadThenReady) {
 
   exe.add([&]() {
     ASSERT_EQ(x, 0);
-    Executor::current()->yield();
+    Executor::get()->yield();
     ASSERT_EQ(x, 1);
     x = 2;
-    Executor::current()->ready(std::move(thread));
-    Executor::current()->yield();
+    Executor::get()->ready(std::move(thread));
+    Executor::get()->yield();
     ASSERT_EQ(x, 3);
   });
 
   exe.add([&]() {
     ASSERT_EQ(x, 0);
     x = 1;
-    Executor::current()->sleep([&](auto thread_) {
+    Executor::get()->sleep([&](auto thread_) {
       thread = std::move(thread_);
     });
     ASSERT_EQ(x, 2);
@@ -79,7 +79,7 @@ TEST(ExecutorTest, DeathIfSleepingWithNoReadyThreads) {
   Executor::Thread thread;
 
   exe.add([&]() {
-    Executor::current()->sleep([&](auto _) {});
+    Executor::get()->sleep([&](auto _) {});
   });
 
   ASSERT_DEATH(exe.run(), "deadlock");
@@ -92,7 +92,7 @@ TEST(ExecutorTest, JoinOnRunningThread) {
 
   auto f = exe.add([&]() {
     ASSERT_EQ(x, 0);
-    Executor::current()->yield();
+    Executor::get()->yield();
     ASSERT_EQ(x, 0);
     x = 1;
   });
@@ -121,7 +121,7 @@ TEST(ExecutorTest, JoinOnFinishedThread) {
 
   auto g = exe.add([&]() {
     while (x != 1) {
-      Executor::current()->yield();
+      Executor::get()->yield();
     }
     f.join();
     x = 2;

@@ -14,14 +14,14 @@ void ConditionVariable::sleep(Lock *guard) {
 
 void ConditionVariable::wake_one() {
   if (!queue_.empty()) {
-    Executor::current()->ready(std::move(queue_.front()));
+    Executor::get()->ready(std::move(queue_.front()));
     queue_.pop();
   }
 }
 
 void ConditionVariable::wake_all() {
   while (!queue_.empty()) {
-    Executor::current()->ready(std::move(queue_.front()));
+    Executor::get()->ready(std::move(queue_.front()));
     queue_.pop();
   }
 }

@@ -22,19 +22,19 @@ TEST(ConditionVariableTest, WakeOne) {
   exe.add([&]() {
     // Wait for all threads to sleep..
     while (x != 100) {
-      Executor::current()->yield();
+      Executor::get()->yield();
     }
 
     // Now let's make sure the threads stay asleep...
     for (int i = 0; i < 100; i++) {
       ASSERT_EQ(x, 100);
-      Executor::current()->yield();
+      Executor::get()->yield();
     }
 
     // Wake one at a time...
     for (int i = 0; i < 100; i++) {
       cv.wake_one();
-      Executor::current()->yield();
+      Executor::get()->yield();
       ASSERT_EQ(x, 101 + i);
     }
   });
@@ -63,19 +63,19 @@ TEST(ConditionVariableTest, WakeAll) {
   exe.add([&]() {
     // Wait for all threads to sleep..
     while (x != 100) {
-      Executor::current()->yield();
+      Executor::get()->yield();
     }
 
     // Now let's make sure the threads stay asleep...
     for (int i = 0; i < 100; i++) {
       ASSERT_EQ(x, 100);
-      Executor::current()->yield();
+      Executor::get()->yield();
     }
 
     // Wake as a group...
     cv.wake_all();
     while (x != 200) {
-      Executor::current()->yield();
+      Executor::get()->yield();
     }
   });
 

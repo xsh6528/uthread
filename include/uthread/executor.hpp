@@ -147,7 +147,7 @@ class Executor {
    *
    * This function NEVER returns a nullptr.
    */
-  static Executor *current();
+  static Executor *get();
 
  private:
   static void thread_f(void *_);

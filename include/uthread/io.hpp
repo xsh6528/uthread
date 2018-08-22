@@ -75,7 +75,7 @@ class Io {
     auto wake = now() + duration;
 
     while (now() < wake) {
-      Executor::current()->yield();
+      Executor::get()->yield();
     }
   }
 
@@ -103,7 +103,7 @@ class Io {
    *
    * This function NEVER returns a nullptr.
    */
-  static Io *current();
+  static Io *get();
 
  private:
   Event sleep(int fd, short eventlib_event, const timeval *timeout);  // NOLINT

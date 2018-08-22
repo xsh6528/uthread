@@ -6,7 +6,7 @@ namespace uthread {
 
 void Mutex::acquire() {
   if (state_ == State::Locked) {
-    Executor::current()->sleep([&](auto thread) {
+    Executor::get()->sleep([&](auto thread) {
       queue_.push(std::move(thread));
     });
   } else {
@@ -18,7 +18,7 @@ void Mutex::release() {
   CHECK(state_ == State::Locked);
 
   if (!queue_.empty()) {
-    Executor::current()->ready(std::move(queue_.front()));
+    Executor::get()->ready(std::move(queue_.front()));
     queue_.pop();
   } else {
     state_ = State::Free;

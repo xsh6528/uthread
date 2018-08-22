@@ -23,7 +23,7 @@ static void event_cb(evutil_socket_t, short event, void *arg) {
     sleeper->event = Io::Event::Write;
   }
 
-  Executor::current()->ready(std::move(sleeper->thread));
+  Executor::get()->ready(std::move(sleeper->thread));
 }
 
 Io::Event Io::sleep_on_fd(int fd, Event event) {
@@ -50,7 +50,7 @@ void Io::add(Executor *executor) {
   DCHECK_NOTNULL(executor);
 
   executor->add([&]() {
-    auto executor = Executor::current();
+    auto executor = Executor::get();
     this_io_ = this;
 
     // Are there any other threads which might perform IO?
@@ -68,7 +68,7 @@ void Io::add(Executor *executor) {
   });
 }
 
-Io *Io::current() {
+Io *Io::get() {
   DCHECK_NOTNULL(this_io_);
 
   return this_io_;
@@ -84,7 +84,7 @@ Io::Event Io::sleep(int fd, short eventlib_event, const timeval *timeout) {
   event_assign(ev, base_.raw(), fd, eventlib_event, event_cb, &sleeper);
   event_add(ev, timeout);
 
-  Executor::current()->sleep([&](auto thread_) {
+  Executor::get()->sleep([&](auto thread_) {
     sleeper.thread = std::move(thread_);
   });
 
