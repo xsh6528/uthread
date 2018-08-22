@@ -16,6 +16,7 @@ void Executor::Thread::Ref::join() {
 }
 
 Executor::Thread::Ref Executor::Thread::ref() const {
+  CHECK(state_) << "Cannot grab a reference to an empty thread!";
   Executor::Thread::Ref ref;
   ref.joined_ = state_->joined;
   return ref;
@@ -61,6 +62,8 @@ void Executor::run() {
     context_swap(&executor_, &(this_thread_.state_->context));
   }
 
+  CHECK_EQ(0, alive_) << "Zombie threads: This poses a resource leak!";
+
   this_thread_ = Thread();
   this_executor_ = nullptr;
 }
@@ -101,7 +104,6 @@ void Executor::thread_f(void *_) {
     LOG(ERROR) << "An exception has occurred: " << ex.what();
     std::terminate();
   }
-
 
   auto joined = this_executor_->this_thread_.state_->joined.get();
 

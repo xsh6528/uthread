@@ -74,17 +74,6 @@ TEST(ExecutorTest, SleepThreadThenReady) {
   ASSERT_EQ(x, 3);
 }
 
-TEST(ExecutorTest, DeathIfSleepingWithNoReadyThreads) {
-  Executor exe;
-  Executor::Thread thread;
-
-  exe.add([&]() {
-    Executor::get()->sleep([&](auto _) {});
-  });
-
-  ASSERT_DEATH(exe.run(), "deadlock");
-}
-
 TEST(ExecutorTest, JoinOnRunningThread) {
   int x = 0;
   Executor exe;
@@ -132,7 +121,7 @@ TEST(ExecutorTest, JoinOnFinishedThread) {
   ASSERT_EQ(x, 2);
 }
 
-TEST(ExecutorTest, ThreadDestroyedOnFinish) {
+TEST(ExecutorTest, ThreadStackedCleanedOnFinish) {
   auto x = std::make_shared<int>();
   Executor exe;
 
@@ -160,14 +149,45 @@ TEST(ExecutorTest, ThreadDestroyedOnFinish) {
   ASSERT_EQ(*x, 3);
 }
 
-TEST(ExecutorTest, DeathFromExceptionCleansUpOtherThreads) {
+TEST(ExecutorTest, DeathIfSleepingWithNoReadyThreads) {
   Executor exe;
 
-  exe.add([=]() {
+  exe.add([]() {
+    Executor::get()->sleep([](auto _) {});
+  });
+
+  ASSERT_DEATH(exe.run(), "Deadlock has occurred: No ready threads!");
+}
+
+TEST(ExecutorTest, DeathIfExceptionInThread) {
+  Executor exe;
+
+  exe.add([]() {
     throw std::runtime_error("This is an exception!");
   });
 
   ASSERT_DEATH(exe.run(), "An exception has occurred: This is an exception!");
+}
+
+TEST(ExecutorTest, DeathIfZombieThread) {
+  Executor exe;
+
+  auto f = []() {
+    Executor::Thread thread;
+    Executor::get()->sleep([&](auto thread_) {
+      /** Thread is placed on it's own stack and never resumed! */
+      thread = std::move(thread_);
+    });
+  };
+
+  auto g = [&]() {
+    auto exe = Executor::get();
+    exe->add(f);
+    exe->yield();
+  };
+
+  exe.add(g);
+  ASSERT_DEATH(exe.run(), "Zombie threads: This poses a resource leak!");
 }
 
 }

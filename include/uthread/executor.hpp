@@ -55,7 +55,6 @@ class Executor {
 
     Thread& operator=(Thread&&) = default;
 
-
     /**
      * Returns a reference to the user thread.
      */
@@ -122,7 +121,7 @@ class Executor {
    */
   template<typename F>
   void sleep(F f)  {
-    CHECK(!ready_.empty()) << "No ready threads... deadlock!";
+    CHECK(!ready_.empty()) << "Deadlock has occurred: No ready threads!";
 
     if (context_get(&(this_thread_.state_->context)) == Snapshot::SNAPSHOT) {
       f(std::move(this_thread_));
