@@ -1,7 +1,10 @@
 #include <cstddef>
 
-#ifdef __x86_64__
-#include <uthread/arch/x86_64/context.hpp>
+// TODO(amaximov): We should add Solaris and FreeBSD here in the future.
+#if defined(__x86_64__) && (defined(__linux__) || defined(__APPLE__))
+#include <uthread/arch/x86_64_sys_v/context.hpp>
+#else
+#error "Sorry, your platform is not supported!"
 #endif
 
 #ifndef UTHREAD_CONTEXT_HPP_
