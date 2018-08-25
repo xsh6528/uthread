@@ -95,7 +95,7 @@ static void worker(User user) {
     while (ok) {
       if (user.seq < gRoom.log.size()) {
         const std::string &mess = gRoom.log[user.seq];
-        if (user.stream->send(mess.c_str(), mess.size()) > 0) {
+        if (user.stream->send(mess.c_str(), mess.size()) == 0) {
           user.seq++;
         } else {
           ok = false;
@@ -145,7 +145,7 @@ static void run() {
 
     // A name has been allocated, so now we just wait for a connection.
     if (listener.accept(*user.stream) != 0)
-      LOG(ERROR) << "Error accepting connection!";
+      LOG(FATAL) << "Error accepting connection!";
 
     user.seq = gRoom.log.size();
     uthread::Executor::get()->add([user]() { worker(user); });

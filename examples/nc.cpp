@@ -56,6 +56,14 @@ static void reader() {
   }
 }
 
+static void run() {
+  CHECK_NE(gStream.connect(FLAGS_host, FLAGS_port), -1)
+    << "Error connecting to endpoint!";
+  CHECK_NE(uthread::nonblocking(STDIN_FILENO), -1);
+  uthread::Executor::get()->add(sender);
+  uthread::Executor::get()->add(reader);
+}
+
 int main(int argc, char *argv[]) {
   gflags::SetUsageMessage("A stripped down (TCP-only) version of netcat.");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
@@ -67,14 +75,9 @@ int main(int argc, char *argv[]) {
             << "echo server."
             << std::endl;
 
-  CHECK_NE(gStream.connect(FLAGS_host, FLAGS_port), -1)
-    << "Error connecting to endpoint!";
-  CHECK_NE(uthread::set_async(STDIN_FILENO), -1);
-
   uthread::Executor exe;
   gIo.add(&exe);
-  exe.add(sender);
-  exe.add(reader);
+  exe.add(run);
   exe.run();
 
   return 0;

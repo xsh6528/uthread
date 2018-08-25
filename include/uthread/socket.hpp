@@ -6,7 +6,7 @@
 namespace uthread {
 
 /**
- * A unique ownership wrapper around a raw file descriptor.
+ * A unique owner of a raw file descriptor.
  */
 class UniqueFd {
  public:
@@ -24,7 +24,7 @@ class UniqueFd {
 
   ~UniqueFd();
 
-  int raw() const;
+  int operator*() const;
 
  private:
   int fd_ = -1;
@@ -53,7 +53,7 @@ class TcpStream {
   /**
    * Sends buf_size bytes from the buffer.
    *
-   * Returns an error constant or the number of bytes send.
+   * Returns an error constant or 0 on success.
    */
   int send(const void *buf, int buf_size);
 
@@ -106,9 +106,11 @@ class TcpListener {
 };
 
 /**
- * Enables non-blocking reads and writes on a file descriptor.
+ * Enables non-blocking operations on a file descriptor.
+ *
+ * Returns -1 in case of an error or 0 on success.
  */
-int set_async(int fd);
+int nonblocking(int fd);
 
 }
 
