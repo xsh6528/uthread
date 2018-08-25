@@ -36,7 +36,8 @@ static void bench_libevent_timer_heard(benchmark::State &state) {
   }
 
   for (auto _ : state) {
-    for (Arg *arg = args; arg < args + state.range(0); arg++) {
+    auto sleepers = state.range(0);
+    for (Arg *arg = args; arg < args + sleepers; arg++) {
       arg->add = 1000;
       event_add(arg->ev, &kOneMs);
     }

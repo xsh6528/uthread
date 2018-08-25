@@ -5,25 +5,16 @@
 
 namespace uthread { namespace context {
 
-static Context context_g;
-
-static void f() {
-  context_set(&context_g);
-}
-
-static void g() {
-  if (context_get(&context_g) == Snapshot::SNAPSHOT) {
-    f();
-  }
-}
-
 /**
- * Benchmarks a context snapshot and switch, using the uthread context_get and
- * context_set API.
+ * This benchmarks estimates the cost of a context snapshot and switch, using
+ * the uthread context API.
  */
 static void bench_context_uthread(benchmark::State &state) {
   for (auto _ : state) {
-    g();
+    Context context;
+    if (context_get(&context) == Snapshot::SNAPSHOT) {
+      context_set(&context);
+    }
   }
 }
 
@@ -33,28 +24,19 @@ BENCHMARK(bench_context_uthread);
 
 #include <ucontext.h>
 
-static ucontext_t context_i;
-
-static void h() {
-  CHECK_EQ(setcontext(&context_i), 0);
-}
-
-static void i() {
-  volatile int go_to_h = 1;
-  CHECK_EQ(getcontext(&context_i), 0);
-  if (go_to_h) {
-    go_to_h = 0;
-    h();
-  }
-}
-
 /**
- * Benchmarks a context snapshot and switch, using the Linux getcontext() and
- * setcontext() API.
+ * This benchmarks estimates the cost of a context snapshot and switch, using
+ * the Linux context API.
  */
 static void bench_context_linux(benchmark::State &state) {
   for (auto _ : state) {
-    i();
+    ucontext_t context;
+    volatile bool skip = false;
+    CHECK_EQ(getcontext(&context), 0);
+    if (!skip) {
+      skip = true;
+      CHECK_EQ(setcontext(&context), 0);
+    }
   }
 }
 

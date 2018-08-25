@@ -6,9 +6,9 @@ namespace uthread {
 
 /**
  * This benchmark estimates the cost of yielding from one thread to another and
- * back.
+ * back. In effect this is measuring the cost of two yields.
  */
-static void bench_executor_yield_pong(benchmark::State &state) {
+static void bench_executor_yield(benchmark::State &state) {
   bool benching = true;
   Executor exe;
 
@@ -59,7 +59,7 @@ static void bench_executor_sleep_and_ready(benchmark::State &state) {
   exe.run();
 }
 
-BENCHMARK(bench_executor_yield_pong);
+BENCHMARK(bench_executor_yield);
 BENCHMARK(bench_executor_sleep_and_ready);
 
 }
