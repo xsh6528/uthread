@@ -10,6 +10,7 @@ sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
     cmake           \
     git             \
     manpages-dev    \
+    netdiag         \
     nmap            \
     python3-pip     \
     tmux            \

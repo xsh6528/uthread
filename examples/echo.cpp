@@ -21,7 +21,7 @@ static void worker() {
 
     while (true) {
       auto r = stream.recv(buf, sizeof(buf));
-      if (r <= 0 || stream.send(buf, r) <= 0) break;
+      if (r <= 0 || stream.send(buf, r) != 0) break;
     }
   }
 }
