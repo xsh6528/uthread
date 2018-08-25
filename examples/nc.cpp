@@ -9,9 +9,6 @@ DEFINE_string(host, "127.0.0.1", "The IPv4 address of the host.");
 
 DEFINE_uint32(port, 8000, "The port to connect to on the host.");
 
-/** An asynchronous IO service. */
-static uthread::Io gIo;
-
 /** A TCP connection to the endpoint. */
 static uthread::TcpStream gStream;
 
@@ -19,7 +16,7 @@ static void sender() {
   char buf[1024];
 
   while (true) {
-    gIo.sleep_on_fd(STDIN_FILENO, uthread::Io::Event::Read);
+    uthread::Io::get()->sleep_on_fd(STDIN_FILENO, uthread::Io::Event::Read);
     auto r = read(STDIN_FILENO, buf, sizeof(buf));
 
     if (r == -1) {
@@ -76,7 +73,7 @@ int main(int argc, char *argv[]) {
             << std::endl;
 
   uthread::Executor exe;
-  gIo.add(&exe);
+  uthread::Io io(&exe);
   exe.add(run);
   exe.run();
 

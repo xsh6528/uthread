@@ -9,8 +9,7 @@ TEST(SocketTest, LocalhostEcho) {
   static constexpr auto kMessageLen = 1024;
 
   Executor exe;
-  Io io;
-  io.add(&exe);
+  Io io(&exe);
 
   exe.add([&]() {
     TcpListener listener;
@@ -58,8 +57,7 @@ TEST(SocketTest, LocalhostEcho) {
 
 TEST(SocketTest, GoogleDnsConnection) {
   Executor exe;
-  Io io;
-  io.add(&exe);
+  Io io(&exe);
 
   exe.add([]() {
     TcpStream stream;

@@ -26,27 +26,7 @@ static void event_cb(evutil_socket_t, short event, void *arg) {
   Executor::get()->ready(std::move(sleeper->thread));
 }
 
-Io::Event Io::sleep_on_fd(int fd, Event event) {
-  short eventlib_event = 0;
-
-  switch (event) {
-    case Event::Read:
-      eventlib_event = EV_READ;
-      break;
-    case Event::Write:
-      eventlib_event = EV_WRITE;
-      break;
-    case Event::ReadWrite:
-      eventlib_event = EV_READ | EV_WRITE;
-      break;
-    default:
-      DCHECK(false) << "Bad event!";
-  }
-
-  return sleep(fd, eventlib_event, nullptr);
-}
-
-void Io::add(Executor *executor) {
+Io::Io(Executor *executor) {
   DCHECK_NOTNULL(executor);
 
   executor->add([&]() {
@@ -66,6 +46,26 @@ void Io::add(Executor *executor) {
 
     this_io_ = nullptr;
   });
+}
+
+Io::Event Io::sleep_on_fd(int fd, Event event) {
+  short eventlib_event = 0;
+
+  switch (event) {
+    case Event::Read:
+      eventlib_event = EV_READ;
+      break;
+    case Event::Write:
+      eventlib_event = EV_WRITE;
+      break;
+    case Event::ReadWrite:
+      eventlib_event = EV_READ | EV_WRITE;
+      break;
+    default:
+      DCHECK(false) << "Bad event!";
+  }
+
+  return sleep(fd, eventlib_event, nullptr);
 }
 
 Io *Io::get() {

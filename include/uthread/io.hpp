@@ -41,6 +41,14 @@ class Io {
   };
 
   /**
+   * Attaches an IO service to the executor.
+   *
+   * You MUST create the IO service before adding any threads to the executor
+   * if you plan on using sockets, timed sleep, etc.
+   */
+  explicit Io(Executor *executor);
+
+  /**
    * Sleeps the current executing thread.
    *
    * The thread is woken back up when the file discriptor is ready for reading
@@ -92,11 +100,6 @@ class Io {
 
     sleep(-1, EV_TIMEOUT, &timeout);
   }
-
-  /**
-   * Adds a background thread for waking up sleeping threads.
-   */
-  void add(Executor *executor);
 
   /**
    * Returns the current IO service.

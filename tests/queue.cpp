@@ -27,14 +27,12 @@ TEST(QueueTest, UnboundedPushAndPopFromSingleThread) {
 
 TEST(QueueTest, PopsWakeManySleepers) {
   Executor exe;
-
-  Io io;
-  io.add(&exe);
+  Io io(&exe);
 
   MpmcQueue<int> q(100);
 
   exe.add([&]() {
-    io.sleep_for(k100Ms);
+    Io::get()->sleep_for(k100Ms);
     for (int i = 0; i < 100; i++) {
       ASSERT_TAKES_APPROX_MS(q.push(-1), 0);
     }
@@ -53,15 +51,13 @@ TEST(QueueTest, PopsWakeManySleepers) {
 
 TEST(QueueTest, PushWakeManySleepers) {
   Executor exe;
-
-  Io io;
-  io.add(&exe);
+  Io io(&exe);
 
   MpmcQueue<int> q(1);
 
   exe.add([&]() {
     ASSERT_TAKES_APPROX_MS(q.push(-1), 0);
-    io.sleep_for(k100Ms);
+    Io::get()->sleep_for(k100Ms);
     for (int i = 0; i < 100; i++) {
       int x;
       ASSERT_TAKES_APPROX_MS(q.pop(x), 0);

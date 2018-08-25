@@ -15,8 +15,7 @@ static void bench_io_sleep(benchmark::State &state) {
   for (auto _ : state) {
     state.PauseTiming();
     Executor exe;
-    Io io;
-    io.add(&exe);
+    Io io(&exe);
 
     for (int threads = 0; threads < state.range(0); threads++) {
       exe.add([&]() {

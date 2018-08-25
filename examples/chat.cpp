@@ -163,8 +163,7 @@ int main(int argc, char *argv[]) {
             << std::endl;
 
   uthread::Executor exe;
-  uthread::Io io;
-  io.add(&exe);
+  uthread::Io io(&exe);
   exe.add(run);
   exe.run();
 

@@ -50,8 +50,7 @@ int main(int argc, char *argv[]) {
             << std::endl;
 
   uthread::Executor exe;
-  uthread::Io io;
-  io.add(&exe);
+  uthread::Io io(&exe);
   for (auto i = FLAGS_threads; i > 0; i--) {
     exe.add(worker);
   }
